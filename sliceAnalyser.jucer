@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="B5vL8j" name="sliceAnalyser" projectType="guiapp" version="1.0.0"
+              bundleIdentifier="com.yourcompany.sliceAnalyser" includeBinaryInAppConfig="1"
+              jucerVersion="3.1.1">
+  <MAINGROUP id="putndE" name="sliceAnalyser">
+    <GROUP id="{20F709EA-5E30-099A-39FE-9F04AD691B2D}" name="Source">
+      <FILE id="Ui1mPK" name="VisualWorld.h" compile="0" resource="0" file="Source/VisualWorld.h"/>
+      <FILE id="rbMb1R" name="VisualComponent.h" compile="0" resource="0"
+            file="Source/VisualComponent.h"/>
+      <FILE id="GA83cx" name="AudioPlaybackDemo.h" compile="0" resource="0"
+            file="Source/AudioPlaybackDemo.h"/>
+      <FILE id="ZWfSpK" name="DataComponent.h" compile="0" resource="0" file="Source/DataComponent.h"/>
+      <FILE id="qakMxr" name="DataTableComponent.h" compile="0" resource="0"
+            file="Source/DataTableComponent.h"/>
+      <FILE id="g0VF2q" name="EssentiaExtractor.cpp" compile="1" resource="0"
+            file="Source/EssentiaExtractor.cpp"/>
+      <FILE id="u3PV8d" name="EssentiaExtractor.h" compile="0" resource="0"
+            file="Source/EssentiaExtractor.h"/>
+      <FILE id="w3i8TZ" name="GenAudioComponent.h" compile="0" resource="0"
+            file="Source/GenAudioComponent.h"/>
+      <FILE id="uYou4K" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="XX8eDq" name="MainComponent.cpp" compile="1" resource="0"
+            file="Source/MainComponent.cpp"/>
+      <FILE id="TrQmOw" name="MyIncludes.h" compile="0" resource="0" file="Source/MyIncludes.h"/>
+      <FILE id="BGfm6V" name="TargetAudioComponent.h" compile="0" resource="0"
+            file="Source/TargetAudioComponent.h"/>
+    </GROUP>
+  </MAINGROUP>
+  <EXPORTFORMATS>
+    <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="" externalLibraries="/usr/local/lib/libessentia-light.a&#10;tag&#10;yaml&#10;opencv_core">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="1" optimisation="1" targetName="sliceAnalyser" headerPath="/usr/local/include"
+                       libraryPath="/usr/local/lib"/>
+        <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+                       isDebug="0" optimisation="3" targetName="sliceAnalyser" headerPath="/usr/local/include"
+                       libraryPath="/usr/local/lib"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_video" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_opengl" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="../../git/JUCE/modules"/>
+        <MODULEPATH id="juce_box2d" path="../../git/JUCE/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
+  </EXPORTFORMATS>
+  <MODULES>
+    <MODULES id="juce_audio_basics" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_devices" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_formats" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_processors" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_audio_utils" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_box2d" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_core" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_cryptography" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_data_structures" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_events" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_graphics" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_gui_basics" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_gui_extra" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_opengl" showAllCode="1" useLocalCopy="0"/>
+    <MODULES id="juce_video" showAllCode="1" useLocalCopy="0"/>
+  </MODULES>
+  <JUCEOPTIONS/>
+</JUCERPROJECT>
