@@ -49,7 +49,7 @@ private:
         currentTargetData.onsets = extractor.extractOnsets(currentTargetData.onsetTimes, currentTargetData.signal);
         currentTargetData.onsetPeakValues = extractor.extractPeakValues(currentTargetData.onsets);
         
-        Pool features = extractor.extractFeatures(currentTargetData.onsets);
+        Pool features = extractor.extractFeatures(currentTargetData.onsets, 0.0f);
         featureMatrix = extractor.poolToMat(features);
         thumbnail->setOnsetMarkers(currentTargetData.onsetTimes);
     }
