@@ -185,7 +185,7 @@ public:
         allRightButton.setBounds(buttonPos.withY(200));
 
         updateFeaturesButton.setSize(75, 25);
-        updateFeaturesButton.setCentrePosition(buttonPos.getX(), 250);
+        updateFeaturesButton.setCentrePosition(buttonPos.getX()+25, 250);
         
         
         tableComponent.setBounds(bottom);

@@ -69,10 +69,11 @@ public:
     
     std::vector<float> hannWindow(int size);
     
-    //STUFF
+    //MHD Stuff
     void writeLoop(float onsetTime, const vector<Real>& audio, float BPM, String outFileName);
     
     vector<Real> randomLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
+    vector<Real> firstLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
     
     Random random;
 };

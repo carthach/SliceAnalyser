@@ -13,7 +13,8 @@
 #include "GenAudioComponent.h"
 #include "TargetAudioComponent.h"
 #include "DataComponent.h"
-#include "VisualComponent.h"
+#include "Box2DComponent.h"
+#include "Visualisation.h"
 
 class AudioTab : public Component
 {
@@ -80,7 +81,9 @@ public:
         DataComponent* dataComponent = new DataComponent();
         addTab ("Audio", Colours::grey, new AudioTab(deviceManager, (DataComponent* )dataComponent), true);
         addTab ("Data",  Colours::grey, dataComponent, true);
-        addTab ("Explorer",  Colours::grey, new Box2DDemo(), true);
+        addTab ("Explorer",  Colours::grey, new Visualisation(), true);
+        addTab ("Box2D",  Colours::grey, new Box2DDemo(), true);
+
 
 //        addTab ("Table",            Colours::grey, new TableTab(),           true);            
     }

@@ -291,6 +291,33 @@ void EssentiaExtractor::writeLoop(float onsetTime, const vector<Real>& audio, fl
     vectorToAudioFile(newVec, outFileName);
 }
 
+vector<Real> EssentiaExtractor::firstLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename)
+{
+    float lengthOfBeatInSamples = (1.0 / BPM) * 60.0 * 44100.0;
+    
+    vector<Real> newVec;
+    
+    int randomOnsetIndex;
+    float startTimeInSamples;
+    float endTimeInSamples;
+    
+    startTimeInSamples = onsetTimes[0] * 44100.0;
+    endTimeInSamples = startTimeInSamples + (lengthOfBeatInSamples * 8.0);
+    
+    //Check yer out of bounds here
+    
+    if(endTimeInSamples <= audio.size()) {
+        vector<Real>::const_iterator first = audio.begin() + (int)startTimeInSamples;
+            vector<Real>::const_iterator last = audio.begin() + (int)endTimeInSamples;
+        
+            newVec = vector<Real>(first, last);
+    
+            vectorToAudioFile(newVec, outFilename);
+    }
+    
+    return newVec;
+}
+
 vector<Real> EssentiaExtractor::randomLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename)
 {
     float lengthOfBeatInSamples = (1.0 / BPM) * 60.0 * 44100.0;
@@ -351,17 +378,18 @@ String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets
         vector<Real> onsetTimes = extractOnsetTimes(signal);
         vector<vector<Real> > onsetSlices = extractOnsets(onsetTimes, signal);
         
-        
         vector<vector<Real> > loops;
         
         int noOfLoops = 2;
     
-        for(int j=0; j<noOfLoops; j++) {
-            loops.push_back(randomLoop(onsetTimes, signal, BPM, outputRoot + String((i*noOfLoops)+j) + "_" + currentAudioFileName +  "_loop_" + String(j) + ".wav"));
-        }
+//        for(int j=0; j<noOfLoops; j++) {
+//            loops.push_back(randomLoop(onsetTimes, signal, BPM, outputRoot + String((i*noOfLoops)+j) + "_" + currentAudioFileName +  "_loop_" + String(j) + ".wav"));
+//        }
+        
+        loops.push_back(firstLoop(onsetTimes, signal, BPM, outputRoot + currentAudioFileName +  "_loop.wav"));
 
-        Pool onsetPool = extractFeatures(loops, BPM);
-        globalOnsetPool.merge(onsetPool, "append");
+//        Pool onsetPool = extractFeatures(loops, BPM);
+//        globalOnsetPool.merge(onsetPool, "append");
         
 //        writeLoop(onsetTimes[5], signal, BPM, outputRoot + "/testy.wav");
         
