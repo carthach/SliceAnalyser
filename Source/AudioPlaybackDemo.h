@@ -186,6 +186,29 @@ public:
         updateOnsetMarkers();
     }
     
+    void setOnsetColours(const std::vector<int>& labels)
+    {
+        colourLabels = labels;
+//        colourMap.clear();
+//       
+//
+//        
+//        for(int i=0; i < labels.size(); i++) {
+//            if(!colourMap.count(labels[i])) {
+//                Colour c(random.nextInt(255), random.nextInt(255), random.nextInt(255));
+//                colourMap[labels[i]] = c;
+//            }
+//        }
+        
+        colourMap[0] = Colours::red;
+        colourMap[1] = Colours::blue;
+        colourMap[2] = Colours::green;
+        colourMap[2] = Colours::yellow;
+        
+        
+        updateOnsetMarkers();
+    }
+    
 private:
     AudioTransportSource& transportSource;
     Slider& zoomSlider;
@@ -201,6 +224,11 @@ private:
     
     OwnedArray<DrawableRectangle> onsetMarkers;
     OwnedArray<Slider> onsetSliders;
+    
+    std::vector<int> colourLabels;
+    std::map<int, Colour> colourMap;
+    
+            Random random;
 
     float timeToX (const double time) const
     {
@@ -271,7 +299,10 @@ private:
             
             onsetSliders[i]->setRange(0.0,1.0);
             onsetSliders[i]->setValue(1.0);
-            onsetSliders[i]->setColour(Slider::ColourIds::thumbColourId, Colours::blue.withAlpha((float)0.4));
+//            onsetSliders[i]->setColour(Slider::ColourIds::thumbColourId, Colours::blue.withAlpha((float)0.4));
+            
+            onsetSliders[i]->setColour(Slider::ColourIds::thumbColourId, colourMap[colourLabels[i]].withAlpha((float)0.4));
+             
             onsetSliders[i]->setColour(Slider::ColourIds::textBoxTextColourId, Colours::white);
         }
     }

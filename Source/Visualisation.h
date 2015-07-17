@@ -13,11 +13,12 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "Element.h"
+#include "Radar.h"
 
 //==============================================================================
 /*
 */
-class Visualisation    : public Component
+class Visualisation    : public Component, public Timer
 {
 public:
     Visualisation()
@@ -25,13 +26,27 @@ public:
         // In your constructor, you should add any child components, and
         // initialise any special settings that your component needs.
         
+        setSize(1280, 1024);
+        
+        float elementRadius = 10.0;
+        
         for(int i=0; i<50; i++) {
-            Colour c(random.nextInt(255), random.nextInt(255), random.nextInt(255));
+            Colour c((uint8)random.nextInt(255), (uint8)random.nextInt(255), (uint8)random.nextInt(255), (uint8)(random.nextInt(155)+100));
             
             elements.add(new Element(c));
             addAndMakeVisible(elements[i]);
-            elements[i]->setBounds(random.nextInt(getParentWidth()-50.0), random.nextInt(getParentHeight()-50.0), 50.0, 50.0);
+//            elements[i]->setBounds(random.nextInt(getParentWidth()-50.0), random.nextInt(getParentHeight()-50.0), 50.0, 50.0);
+            elements[i]->setBounds(random.nextInt(getParentWidth()-50.0), random.nextInt(getParentHeight()-50.0), elementRadius, elementRadius);
         }
+        
+        float radarRadius = 800.0;
+        addAndMakeVisible(radar);
+
+        radar.setSize(radarRadius, radarRadius);
+        
+        radar.setCentrePosition(getWidth()/2.0, getHeight()/2.0);
+        
+        startTimer(1000/60);
     }
 
     ~Visualisation()
@@ -47,7 +62,7 @@ public:
            drawing code..
         */
 
-//        g.fillAll (Colours::black);   // clear the background
+        g.fillAll (Colours::black);   // clear the background
 //
 //        g.setColour (Colours::grey);
 //        g.drawRect (getLocalBounds(), 1);   // draw an outline around the component
@@ -67,10 +82,16 @@ public:
         // components that your component contains..
         
     }
+    
+    void timerCallback() override
+    {
+        repaint();
+    }
 
 private:
     Random random;
     OwnedArray<Element> elements;
+    Radar radar;
     
     
     

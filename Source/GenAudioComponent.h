@@ -185,8 +185,6 @@ private:
         cv::Mat reducedTargetMatrix = dataComponent->getSelectedFeatureMatrix(headerData, targetMatrix);
         cv::Mat reducedDatasetMatrix = dataComponent->getSelectedFeatureMatrix(headerData, datasetMatrix);
         
-
-
         //Merge matrices
         reducedDatasetMatrix.push_back(reducedTargetMatrix);
         

@@ -74,6 +74,8 @@ public:
     
     vector<Real> randomLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
     vector<Real> firstLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
+
+    cv::Mat clusterData(cv::Mat points);
     
     Random random;
 };

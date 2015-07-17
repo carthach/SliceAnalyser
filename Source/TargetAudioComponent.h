@@ -51,7 +51,15 @@ private:
         
         Pool features = extractor.extractFeatures(currentTargetData.onsets, 0.0f);
         featureMatrix = extractor.poolToMat(features);
+        cv::Mat labels = extractor.clusterData(featureMatrix);
+        std::vector<int> labelsVector;
+        
+        for(int i=0; i<labels.rows; i++)
+            labelsVector.push_back(labels.at<int>(i,0));
+
+        thumbnail->setOnsetColours(labelsVector);
         thumbnail->setOnsetMarkers(currentTargetData.onsetTimes);
+        
     }
     
     void resized () override

@@ -11,6 +11,8 @@
               file="Source/Box2DComponent.h"/>
       </GROUP>
       <GROUP id="{53A4060D-F37E-A336-1EFD-01143F78B13C}" name="Visualisation">
+        <FILE id="cFSyz3" name="Radar.cpp" compile="1" resource="0" file="Source/Radar.cpp"/>
+        <FILE id="tRDhWQ" name="Radar.h" compile="0" resource="0" file="Source/Radar.h"/>
         <FILE id="kyNLs4" name="Visualisation.h" compile="0" resource="0" file="Source/Visualisation.h"/>
         <FILE id="Vi6DhT" name="Element.cpp" compile="1" resource="0" file="Source/Element.cpp"/>
         <FILE id="zsjpDV" name="Element.h" compile="0" resource="0" file="Source/Element.h"/>
