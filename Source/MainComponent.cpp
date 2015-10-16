@@ -21,7 +21,7 @@ class AudioTab : public Component
 public:
     ApplicationProperties applicationProperties;
     
-    AudioTab(AudioDeviceManager* deviceManager, DataComponent* dataComponent) : targetAudioComponent(deviceManager), genAudioComponent(deviceManager, &targetAudioComponent, dataComponent)
+    AudioTab(AudioDeviceManager* deviceManager, DataComponent* dataComponent) : targetAudioComponent(deviceManager, dataComponent), genAudioComponent(deviceManager, &targetAudioComponent, dataComponent)
     {
         addAndMakeVisible(targetAudioComponent);
         addAndMakeVisible(genAudioComponent);
@@ -86,9 +86,6 @@ public:
         addTab ("Explorer",  Colours::grey, new Visualisation(), true);
         addTab ("Box2D",  Colours::grey, new Box2DDemo(), true);
         
-        std::cout << getWidth() << "\n";
-
-
 //        addTab ("Table",            Colours::grey, new TableTab(),           true);            
     }
 };

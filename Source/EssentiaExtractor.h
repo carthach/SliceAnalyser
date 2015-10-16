@@ -75,7 +75,11 @@ public:
     vector<Real> randomLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
     vector<Real> firstLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
 
-    cv::Mat clusterData(cv::Mat points);
+    cv::Mat kMeans(cv::Mat points, int k);
+    cv::Mat knnTrain(cv::Mat points, cv::Mat classes);
+    cv::Mat knnClassify(cv::Mat instance, int k);
+    
+    CvKNearest knn;
     
     Random random;
 };

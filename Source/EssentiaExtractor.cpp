@@ -162,6 +162,8 @@ vector<Real> EssentiaExtractor::extractOnsetTimes(const vector<Real>& audio)
     return onsets;
 }
 
+
+
 vector<Real> EssentiaExtractor::getGlobalFeatures(const vector<Real>& audio)
 {
     Algorithm* rhythmExtractor = AlgorithmFactory::create("RhythmExtractor2013", "method", "degara");
@@ -264,11 +266,26 @@ Pool EssentiaExtractor::loadDataset(const String& jsonFilename)
     yamlInput->output("pool").set(pool);
     yamlInput->compute();
     
-    delete yamlInput;
+    //Train Classifier
+    if (pool.contains<vector<Real> >("labels")) {
+        vector<Real> labelsVector = pool.value<vector<Real> >("labels");
+        pool.remove("labels");
+        
+        cv::Mat features = poolToMat(pool);
+        cv::Mat labels(labelsVector, true);
+        
+        knn.train(features, labels);
+    }
+    
+    std::cout << pool.descriptorNames() << "\n";
+    
     this->globalOnsetPool = pool;
+    
+    delete yamlInput;
     
     return pool;
 }
+
 
 void EssentiaExtractor::writeLoop(float onsetTime, const vector<Real>& audio, float BPM, String outFileName)
 {
@@ -359,17 +376,44 @@ String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets
     
     File fileNames(outputRoot + "filesProcessed.txt");
     
+    vector<Real> labels;
+    
+    int count = 0;
+    
+    File filesProcessedFile("/Users/carthach/Desktop/files_juce\n.txt");
+    
     for(int i=0; i<filesToProcess.size(); i++) {
         String currentAudioFileName = filesToProcess[i].getFileName();
+
+        
+        int label;
+        if(currentAudioFileName.startsWith("LO_")) {
+            label = 0;
+            count++;
+        }
+        else if(currentAudioFileName.startsWith("MID_")) {
+            label = 1;
+            count++;
+        }
+        else if(currentAudioFileName.startsWith("HI_")) {
+            label = 2;
+            count++;
+        }
+        else {
+            continue;
+        }
         
         std::cout << "Processing file: " << currentAudioFileName << "\n";
+        
+        filesProcessedFile.appendText(currentAudioFileName + "\n");
+        
+        labels.push_back(label);
+        
         fileNames.appendText(filesToProcess[i].getFileName() + "\n");
-        
         vector<Real> signal = audioFileToVector(filesToProcess[i]);
+//        Real BPM =  getGlobalFeatures(signal)[0];
         
-        Real BPM =  getGlobalFeatures(signal)[0];
-        
-        std::cout << BPM << "\n";
+//        std::cout << BPM << "\n";
         
         //------Onset Processing
         
@@ -377,15 +421,20 @@ String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets
         vector<Real> onsetTimes = extractOnsetTimes(signal);
         vector<vector<Real> > onsetSlices = extractOnsets(onsetTimes, signal);
         
-        vector<vector<Real> > loops;
+//        vector<vector<Real> > onsetSlices;
+        onsetSlices.push_back(signal);
         
-        int noOfLoops = 2;
+//        std::cout << "noOfOnsets: " << onsetSlices.size() << "\n";
+        
+        //Loopy stuff - MHD
+//        vector<vector<Real> > loops;
+//        int noOfLoops = 2;
     
 //        for(int j=0; j<noOfLoops; j++) {
 //            loops.push_back(randomLoop(onsetTimes, signal, BPM, outputRoot + String((i*noOfLoops)+j) + "_" + currentAudioFileName +  "_loop_" + String(j) + ".wav"));
 //        }
         
-        loops.push_back(firstLoop(onsetTimes, signal, BPM, outputRoot + currentAudioFileName +  "_loop.wav"));
+//        loops.push_back(firstLoop(onsetTimes, signal, BPM, outputRoot + currentAudioFileName +  "_loop.wav"));
 
 //        Pool onsetPool = extractFeatures(loops, BPM);
 //        globalOnsetPool.merge(onsetPool, "append");
@@ -394,14 +443,19 @@ String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets
         
         
         //Write
-//        if(writeOnsets)
-//            this->writeOnsets(onsetSlices, outputRoot);
+        if(writeOnsets)
+            this->writeOnsets(onsetSlices, outputRoot);
         
         //Add to pool
-//        Pool onsetPool = extractFeatures(onsetSlices, BPM);
+        Pool onsetPool = extractFeatures(onsetSlices, 0);
         
-//        globalOnsetPool.merge(onsetPool, "append");
+        globalOnsetPool.merge(onsetPool, "append");
     }
+    
+    std::cout << "No. of files processed: " << count << "\n";
+    
+    globalOnsetPool.append("labels", labels);
+    
     
     String jsonFilename = outputRoot + "dataset.json";
     
@@ -418,7 +472,7 @@ String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets
     
 //    cv::Mat erbHi = poolToMat(pool);      
     
-//    cv::Mat poolMat = globalPoolToMat();
+    cv::Mat poolMat = globalPoolToMat();
     
 //    cv::Mat pcaOut = pcaReduce(poolMat, 3);
     return jsonFilename;
@@ -460,10 +514,7 @@ cv::Mat EssentiaExtractor::poolToMat(const Pool& pool)
     RealIterator realIterator = realFeatures.begin();
     int noOfInstances = realIterator->second.size();
     
-
-    
     Mat realFeaturesMatrix(noOfInstances, noOfFeatures, DataType<float>::type);
-    
     
     int i=0;
     for(; realIterator != realFeatures.end(); realIterator++) {
@@ -510,18 +561,24 @@ cv::Mat EssentiaExtractor::poolToMat(const Pool& pool)
     return mat;
 }
 
-cv::Mat EssentiaExtractor::clusterData(cv::Mat points)
+cv::Mat EssentiaExtractor::kMeans(cv::Mat points, int k)
 {
     using namespace cv;
     cv::Mat labels, centers;
     
-    int clusterCount =  3;
-    
-    kmeans(points, clusterCount, labels,
+    kmeans(points, k, labels,
            TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 10, 1.0),
            3, KMEANS_PP_CENTERS, centers);
         
     return labels;
+}
+
+cv::Mat EssentiaExtractor::knnClassify(cv::Mat instances, int k)
+{
+    cv::Mat results;
+    knn.find_nearest(instances, k, &results, 0, 0, 0);
+    
+    return results;
 }
 
 /* Use openCV and PCA to collapse the MFCCs to 2D points for visualisation */
@@ -916,6 +973,6 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices, Real BPM)
     onsetPool.remove("pitch.var");
     onsetPool.remove("spectral_centroid.mean");
     onsetPool.remove("spectral_centroid.var");
-    std::cout << onsetPool.descriptorNames();
+//    std::cout << onsetPool.descriptorNames();
     return onsetPool;
 }

@@ -75,7 +75,8 @@ public:
     ListBoxContents sourceModel, destinationModel;
     TextButton selectionLeftButton, allLeftButton, selectionRightButton, allRightButton, updateFeaturesButton, outputLoopButton;
     
-    DataTableComponent tableComponent;        
+    DataTableComponent tableComponent;
+    EssentiaExtractor extractor;
 
   
     DataComponent() : extractor(&formatManager)
@@ -143,6 +144,7 @@ public:
         
             if(File(lastDatasetFile).existsAsFile()) {
                 loadDataset(lastDatasetFile);
+                
             }
         }
         
@@ -216,7 +218,6 @@ private:
     TextButton fileLoadButton, buildDatasetButton;
     AudioFormatManager formatManager;
     CoreAudioFormat coreAudioFormat;
-    EssentiaExtractor extractor;
     HashMap<String, int> featureMap;
 
 
@@ -285,6 +286,8 @@ private:
     void loadDataset(const String& jsonFile)
     {
         extractor.loadDataset(jsonFile);
+        
+        //Create KNN
         updateData();
     }
     
