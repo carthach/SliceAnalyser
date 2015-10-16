@@ -24,7 +24,7 @@
 		638FF2CDEA545EE2310B9652 /* juce_core.mm in Sources */ = {isa = PBXBuildFile; fileRef = EF9A34EF684C376DCA27999F /* juce_core.mm */; };
 		7898054FB08C7EBBE7F9C080 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3AB2CF0D039F29FE35CF0B78 /* IOKit.framework */; };
 		79B2718812EA900117B69FF8 /* juce_opengl.mm in Sources */ = {isa = PBXBuildFile; fileRef = 780031994A6205F2E798BF33 /* juce_opengl.mm */; };
-		8AAE795D8034E3CB9B053A53 /* EssentiaExtractor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB353F2446A42A9E1FA677 /* EssentiaExtractor.cpp */; };
+		8AAE795D8034E3CB9B053A53 /* Extraction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 25FB353F2446A42A9E1FA677 /* Extraction.cpp */; };
 		9E554420DB5AF2D38E7D4D37 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 32292BD9A3990614971E9B34 /* WebKit.framework */; };
 		A8DD17548C2DC024FC19798D /* RubberBand.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EFA75697B0DB11198505571A /* RubberBand.cpp */; };
 		B4A5B4B3CC5C8DCFE1CCB43E /* juce_audio_utils.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9D21608B5F6709ADDE300740 /* juce_audio_utils.mm */; };
@@ -191,7 +191,7 @@
 		25DC61212894AAC66FB854DA /* juce_Singleton.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = juce_Singleton.h; path = ../../../../git/JUCE/modules/juce_core/memory/juce_Singleton.h; sourceTree = SOURCE_ROOT; };
 		25E1465DF750FB96AD0E8B3D /* juce_FileListComponent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = juce_FileListComponent.h; path = ../../../../git/JUCE/modules/juce_gui_basics/filebrowser/juce_FileListComponent.h; sourceTree = SOURCE_ROOT; };
 		25E2D2B10B0D3DB339ACEE9B /* juce_ios_Audio.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = juce_ios_Audio.cpp; path = ../../../../git/JUCE/modules/juce_audio_devices/native/juce_ios_Audio.cpp; sourceTree = SOURCE_ROOT; };
-		25FB353F2446A42A9E1FA677 /* EssentiaExtractor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = EssentiaExtractor.cpp; path = ../../Source/EssentiaExtractor.cpp; sourceTree = SOURCE_ROOT; };
+		25FB353F2446A42A9E1FA677 /* Extraction.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Extraction.cpp; path = ../../Source/Extraction.cpp; sourceTree = SOURCE_ROOT; };
 		261C68347A2AFDE25E187BEE /* juce_Point.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = juce_Point.h; path = ../../../../git/JUCE/modules/juce_graphics/geometry/juce_Point.h; sourceTree = SOURCE_ROOT; };
 		264066B3F2B486300F03D975 /* juce_GenericAudioProcessorEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = juce_GenericAudioProcessorEditor.h; path = ../../../../git/JUCE/modules/juce_audio_processors/processors/juce_GenericAudioProcessorEditor.h; sourceTree = SOURCE_ROOT; };
 		269E66679C83A42C1262134E /* juce_LuaCodeTokeniser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = juce_LuaCodeTokeniser.cpp; path = ../../../../git/JUCE/modules/juce_gui_extra/code_editor/juce_LuaCodeTokeniser.cpp; sourceTree = SOURCE_ROOT; };
@@ -353,7 +353,7 @@
 		51A39B91F8348170794DDF1E /* juce_StringPairArray.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = juce_StringPairArray.cpp; path = ../../../../git/JUCE/modules/juce_core/text/juce_StringPairArray.cpp; sourceTree = SOURCE_ROOT; };
 		51B358A9F699B530647D3992 /* juce_DrawableText.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = juce_DrawableText.cpp; path = ../../../../git/JUCE/modules/juce_gui_basics/drawables/juce_DrawableText.cpp; sourceTree = SOURCE_ROOT; };
 		51F459670DDBFDE5C83FBBA7 /* juce_CoreAudioFormat.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = juce_CoreAudioFormat.cpp; path = ../../../../git/JUCE/modules/juce_audio_formats/codecs/juce_CoreAudioFormat.cpp; sourceTree = SOURCE_ROOT; };
-		522B3108F6352DDDA4FC9F3D /* EssentiaExtractor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EssentiaExtractor.h; path = ../../Source/EssentiaExtractor.h; sourceTree = SOURCE_ROOT; };
+		522B3108F6352DDDA4FC9F3D /* Extraction.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Extraction.h; path = ../../Source/Extraction.h; sourceTree = SOURCE_ROOT; };
 		52316525E87EDA59ED607D0D /* juce_audio_utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = juce_audio_utils.h; path = ../../../../git/JUCE/modules/juce_audio_utils/juce_audio_utils.h; sourceTree = SOURCE_ROOT; };
 		5286AC8DCBE8C4968A657CC2 /* juce_TableListBox.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = juce_TableListBox.h; path = ../../../../git/JUCE/modules/juce_gui_basics/widgets/juce_TableListBox.h; sourceTree = SOURCE_ROOT; };
 		52A587BA8627ABFCCF68B4F2 /* juce_AudioFormatReader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = juce_AudioFormatReader.cpp; path = ../../../../git/JUCE/modules/juce_audio_formats/format/juce_AudioFormatReader.cpp; sourceTree = SOURCE_ROOT; };
@@ -1009,6 +1009,15 @@
 			name = images;
 			sourceTree = "<group>";
 		};
+		07A5F01A1BD17C82009F8192 /* Muce */ = {
+			isa = PBXGroup;
+			children = (
+				25FB353F2446A42A9E1FA677 /* Extraction.cpp */,
+				522B3108F6352DDDA4FC9F3D /* Extraction.h */,
+			);
+			name = Muce;
+			sourceTree = "<group>";
+		};
 		088B2E5EF7161B6549C01C4E /* juce_graphics */ = {
 			isa = PBXGroup;
 			children = (
@@ -1380,6 +1389,7 @@
 		307760051F5D558986C42DA2 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				07A5F01A1BD17C82009F8192 /* Muce */,
 				30ABDDDCF5BBE8863CBAA8E9 /* Visualisation */,
 				4943845D7ECC858508B32DF3 /* Box2D */,
 				EFA75697B0DB11198505571A /* RubberBand.cpp */,
@@ -1387,8 +1397,6 @@
 				BCCBA574756CD3B235507E86 /* AudioPlaybackDemo.h */,
 				1618DC1E29B11780D1D5A0BE /* DataComponent.h */,
 				1E3987718D05AF6DED70DA37 /* DataTableComponent.h */,
-				25FB353F2446A42A9E1FA677 /* EssentiaExtractor.cpp */,
-				522B3108F6352DDDA4FC9F3D /* EssentiaExtractor.h */,
 				39329EF70BD7F4EBCE43C3D9 /* GenAudioComponent.h */,
 				33C6BED81A48168B32DC9CCB /* Main.cpp */,
 				32144BB4658FFB83BBCC7A37 /* MainComponent.cpp */,
@@ -2868,7 +2876,7 @@
 				5E76FDAB5E2AFB68896234E7 /* Radar.cpp in Sources */,
 				5719BEDD7B1F65A7F31CC16A /* Element.cpp in Sources */,
 				A8DD17548C2DC024FC19798D /* RubberBand.cpp in Sources */,
-				8AAE795D8034E3CB9B053A53 /* EssentiaExtractor.cpp in Sources */,
+				8AAE795D8034E3CB9B053A53 /* Extraction.cpp in Sources */,
 				EEE729479C6CCDC24005B8ED /* Main.cpp in Sources */,
 				1275291BE31B2F93F2604640 /* MainComponent.cpp in Sources */,
 				39FF8EAEE7EBE3D71D1FC05D /* juce_audio_basics.mm in Sources */,
