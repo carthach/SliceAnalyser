@@ -31,13 +31,20 @@ EssentiaExtractor::EssentiaExtractor(AudioFormatManager* formatManager)
 //    essentia::init();
         
     this->formatManager = formatManager;
+    
+
+}
+
+EssentiaExtractor::~EssentiaExtractor()
+{
+//    delete rhythmExtractor;
 }
 
 Array<File> EssentiaExtractor::getAudioFiles(const File& audioFolder)
 {
     Array<File> audioFiles;
     
-    DirectoryIterator iter (audioFolder, false, "*.wav");
+    DirectoryIterator iter (audioFolder, false, "*.mp3;*.wav");
     
     while (iter.next())
     {
@@ -51,8 +58,10 @@ Array<File> EssentiaExtractor::getAudioFiles(const File& audioFolder)
 AudioSampleBuffer EssentiaExtractor::audioFileToSampleBuffer(const File audioFile)
 {
     //Read audio into buffer
-    ScopedPointer<AudioFormatReader> reader = formatManager->createReaderFor(audioFile);
+    ScopedPointer<AudioFormatReader> reader;
     
+    reader = formatManager->createReaderFor(audioFile);
+  
     AudioSampleBuffer buffer(reader->numChannels, reader->lengthInSamples);
     reader->read(&buffer, 0, reader->lengthInSamples, 0, true, true);
     
@@ -153,6 +162,54 @@ vector<Real> EssentiaExtractor::extractOnsetTimes(const vector<Real>& audio)
     return onsets;
 }
 
+
+
+vector<Real> EssentiaExtractor::getGlobalFeatures(const vector<Real>& audio)
+{
+    Algorithm* rhythmExtractor = AlgorithmFactory::create("RhythmExtractor2013", "method", "degara");
+    
+    Real bpm ,confidence;
+    vector<Real> ticks, estimates, bpmIntervals;
+    
+    rhythmExtractor->input("signal").set(audio);
+    rhythmExtractor->output("bpm").set(bpm);
+    rhythmExtractor->output("ticks").set(ticks);
+    rhythmExtractor->output("estimates").set(estimates);
+    rhythmExtractor->output("bpmIntervals").set(bpmIntervals);
+    rhythmExtractor->output("confidence").set(confidence);
+    
+    rhythmExtractor->compute();
+    
+    vector<Real> blah;
+    blah.push_back(bpm);
+    
+    delete rhythmExtractor;
+    
+    return blah;
+}
+
+//vector<Real> EssentiaExtractor::getGlobalFeatures(const vector<Real>& audio)
+//{
+//    Algorithm* bpmHistogram = AlgorithmFactory::create("RhythmDescriptors");
+//    
+//    Real bpm;
+//    
+//    vector<Real> vec;
+//    
+//    bpmHistogram->input("signal").set(audio);
+//    bpmHistogram->output("bpm").set(bpm);
+//    bpmHistogram->output("beats_position").set("");
+//    
+//    bpmHistogram->compute();
+//
+//    vec.push_back(bpm);
+//    
+//    
+//    delete bpmHistogram;
+//    
+//    return vec;
+//}
+
 vector<vector<Real> > EssentiaExtractor::extractOnsets(const vector<Real>& onsetTimes, const vector<Real>& audio)
 {
     vector<vector<Real> > slices;
@@ -176,15 +233,15 @@ vector<vector<Real> > EssentiaExtractor::extractOnsets(const vector<Real>& onset
     
     delete slicer;
     
-//    for(int i=0; i<slices.size();i++) {
-//        std::vector<float> hann = hannWindow(slices[i].size());
-//        for(int j=0; j<slices[i].size(); j++) {
-//            if(j <= 256)
-//                slices[i][j] = slices[i][j] * hann[j];
-//            if(j >= (float)slices[i].size() / 4.0)
-//                slices[i][j] = slices[i][j] * hann[j];
-//        }
-//    }
+    for(int i=0; i<slices.size();i++) {
+        std::vector<float> hann = hannWindow(slices[i].size());
+        for(int j=0; j<slices[i].size(); j++) {
+            if(j <= 256)
+                slices[i][j] = slices[i][j] * hann[j];
+            if(j >= (float)slices[i].size() / 4.0)
+                slices[i][j] = slices[i][j] * hann[j];
+        }
+    }
     
     return slices;
 }
@@ -209,11 +266,100 @@ Pool EssentiaExtractor::loadDataset(const String& jsonFilename)
     yamlInput->output("pool").set(pool);
     yamlInput->compute();
     
-    delete yamlInput;
+    //Train Classifier
+    if (pool.contains<vector<Real> >("labels")) {
+        vector<Real> labelsVector = pool.value<vector<Real> >("labels");
+        pool.remove("labels");
+        
+        cv::Mat features = poolToMat(pool);
+        cv::Mat labels(labelsVector, true);
+        
+        knn.train(features, labels);
+    }
+    
+    std::cout << pool.descriptorNames() << "\n";
+    
     this->globalOnsetPool = pool;
+    
+    delete yamlInput;
     
     return pool;
 }
+
+
+void EssentiaExtractor::writeLoop(float onsetTime, const vector<Real>& audio, float BPM, String outFileName)
+{
+    float startTimeInSamples = onsetTime * 44100.0;
+    
+    float lengthOfBeatInSamples = (1.0 / BPM) * 60.0 * 44100.0;
+
+    float endTimeInSamples = startTimeInSamples + (lengthOfBeatInSamples * 8.0);
+    
+    while(endTimeInSamples >= (audio.size() - endTimeInSamples))
+        endTimeInSamples = startTimeInSamples + (lengthOfBeatInSamples * 8.0);        
+    
+    vector<Real>::const_iterator first = audio.begin() + (int)startTimeInSamples;
+    vector<Real>::const_iterator last = audio.begin() + (int)endTimeInSamples;
+    
+    vector<Real> newVec(first, last);
+    
+    vectorToAudioFile(newVec, outFileName);
+}
+
+vector<Real> EssentiaExtractor::firstLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename)
+{
+    float lengthOfBeatInSamples = (1.0 / BPM) * 60.0 * 44100.0;
+    
+    vector<Real> newVec;
+    
+    int randomOnsetIndex;
+    float startTimeInSamples;
+    float endTimeInSamples;
+    
+    startTimeInSamples = onsetTimes[0] * 44100.0;
+    endTimeInSamples = startTimeInSamples + (lengthOfBeatInSamples * 8.0);
+    
+    //Check yer out of bounds here
+    
+    if(endTimeInSamples <= audio.size()) {
+        vector<Real>::const_iterator first = audio.begin() + (int)startTimeInSamples;
+            vector<Real>::const_iterator last = audio.begin() + (int)endTimeInSamples;
+        
+            newVec = vector<Real>(first, last);
+    
+            vectorToAudioFile(newVec, outFilename);
+    }
+    
+    return newVec;
+}
+
+vector<Real> EssentiaExtractor::randomLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename)
+{
+    float lengthOfBeatInSamples = (1.0 / BPM) * 60.0 * 44100.0;
+    
+    vector<Real> newVec;
+
+    int randomOnsetIndex;
+    float startTimeInSamples;
+    float endTimeInSamples;
+    
+    do  {
+        int randomOnsetIndex = random.nextInt(onsetTimes.size());
+        startTimeInSamples = onsetTimes[randomOnsetIndex] * 44100.0;
+        endTimeInSamples = startTimeInSamples + (lengthOfBeatInSamples * 8.0);
+        
+    } while(endTimeInSamples > (audio.size()-endTimeInSamples));
+
+    vector<Real>::const_iterator first = audio.begin() + (int)startTimeInSamples;
+    vector<Real>::const_iterator last = audio.begin() + (int)endTimeInSamples;
+
+    newVec = vector<Real>(first, last);
+
+    vectorToAudioFile(newVec, outFilename);
+        
+    return newVec;
+}
+
 
 String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets)
 {
@@ -228,18 +374,88 @@ String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets
 
     globalOnsetPool.clear();
     
+    File fileNames(outputRoot + "filesProcessed.txt");
+    
+    vector<Real> labels;
+    
+    int count = 0;
+    
+    File filesProcessedFile("/Users/carthach/Desktop/files_juce\n.txt");
+    
     for(int i=0; i<filesToProcess.size(); i++) {
-        std::cout << "Processing file: " << filesToProcess[i].getFileName() << "\n";
+        String currentAudioFileName = filesToProcess[i].getFileName();
+
+        
+        int label;
+        if(currentAudioFileName.startsWith("LO_")) {
+            label = 0;
+            count++;
+        }
+        else if(currentAudioFileName.startsWith("MID_")) {
+            label = 1;
+            count++;
+        }
+        else if(currentAudioFileName.startsWith("HI_")) {
+            label = 2;
+            count++;
+        }
+        else {
+            continue;
+        }
+        
+        std::cout << "Processing file: " << currentAudioFileName << "\n";
+        
+        filesProcessedFile.appendText(currentAudioFileName + "\n");
+        
+        labels.push_back(label);
+        
+        fileNames.appendText(filesToProcess[i].getFileName() + "\n");
         vector<Real> signal = audioFileToVector(filesToProcess[i]);
+//        Real BPM =  getGlobalFeatures(signal)[0];
+        
+//        std::cout << BPM << "\n";
+        
+        //------Onset Processing
+        
+        //Slice
         vector<Real> onsetTimes = extractOnsetTimes(signal);
         vector<vector<Real> > onsetSlices = extractOnsets(onsetTimes, signal);
         
+//        vector<vector<Real> > onsetSlices;
+        onsetSlices.push_back(signal);
+        
+//        std::cout << "noOfOnsets: " << onsetSlices.size() << "\n";
+        
+        //Loopy stuff - MHD
+//        vector<vector<Real> > loops;
+//        int noOfLoops = 2;
+    
+//        for(int j=0; j<noOfLoops; j++) {
+//            loops.push_back(randomLoop(onsetTimes, signal, BPM, outputRoot + String((i*noOfLoops)+j) + "_" + currentAudioFileName +  "_loop_" + String(j) + ".wav"));
+//        }
+        
+//        loops.push_back(firstLoop(onsetTimes, signal, BPM, outputRoot + currentAudioFileName +  "_loop.wav"));
+
+//        Pool onsetPool = extractFeatures(loops, BPM);
+//        globalOnsetPool.merge(onsetPool, "append");
+        
+//        writeLoop(onsetTimes[5], signal, BPM, outputRoot + "/testy.wav");
+        
+        
+        //Write
         if(writeOnsets)
             this->writeOnsets(onsetSlices, outputRoot);
         
-        Pool onsetPool = extractFeatures(onsetSlices);
+        //Add to pool
+        Pool onsetPool = extractFeatures(onsetSlices, 0);
+        
         globalOnsetPool.merge(onsetPool, "append");
     }
+    
+    std::cout << "No. of files processed: " << count << "\n";
+    
+    globalOnsetPool.append("labels", labels);
+    
     
     String jsonFilename = outputRoot + "dataset.json";
     
@@ -254,7 +470,7 @@ String EssentiaExtractor::buildDataset(const File& audioFolder, bool writeOnsets
 //    jsonFileText = "%YAML:1.0\n" + jsonFileText;
 //    jsonFile.replaceWithText(jsonFileText);
     
-//    cv::Mat erbHi = poolToMat(pool);        
+//    cv::Mat erbHi = poolToMat(pool);      
     
     cv::Mat poolMat = globalPoolToMat();
     
@@ -345,6 +561,26 @@ cv::Mat EssentiaExtractor::poolToMat(const Pool& pool)
     return mat;
 }
 
+cv::Mat EssentiaExtractor::kMeans(cv::Mat points, int k)
+{
+    using namespace cv;
+    cv::Mat labels, centers;
+    
+    kmeans(points, k, labels,
+           TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 10, 1.0),
+           3, KMEANS_PP_CENTERS, centers);
+        
+    return labels;
+}
+
+cv::Mat EssentiaExtractor::knnClassify(cv::Mat instances, int k)
+{
+    cv::Mat results;
+    knn.find_nearest(instances, k, &results, 0, 0, 0);
+    
+    return results;
+}
+
 /* Use openCV and PCA to collapse the MFCCs to 2D points for visualisation */
 
 cv::Mat EssentiaExtractor::pcaReduce(cv::Mat mat, int noOfDimensions)
@@ -420,7 +656,7 @@ void EssentiaExtractor::readYamlToMatrix(const String& yamlFilename, const Strin
 }
 
 //Put your extractor code here
-Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
+Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices, Real BPM)
 {
     //The 3 levels of pools
     Pool framePool, aggrPool, onsetPool;
@@ -438,6 +674,8 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
     Algorithm* spec  = factory.create("Spectrum");
     
     Algorithm* mfcc  = factory.create("MFCC");
+    
+
     
     // FrameCutter -> Windowing -> Spectrum
     std::vector<Real> frame, windowedFrame;
@@ -457,13 +695,14 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
     mfcc->output("bands").set(mfccBands);
     mfcc->output("mfcc").set(mfccCoeffs);
     
-    // Spectrum -> MFCC
-    vector<Real> bands;
-    
-    Algorithm* erbBands = factory.create("ERBBands");
+    // Bands
+    vector<Real> bandsVector;
 
-    erbBands->input("spectrum").set(spectrum);
-    erbBands->output("bands").set(bands);
+//    Algorithm* bands = factory.create("ERBBands");
+    Algorithm* bands = factory.create("ERBBands");
+
+    bands->input("spectrum").set(spectrum);
+    bands->output("bands").set(bandsVector);
     
     //Stastical things
     float halfSampleRate = (float)sampleRate / 2.0;
@@ -474,6 +713,23 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
     Real spectralCentroid;
     centroid->input("array").set(spectrum);
     centroid->output("centroid").set(spectralCentroid);
+    
+    //MHD descriptors
+    Real pitchReal, pitchConfidence;
+    Algorithm* pitch = factory.create("PitchYinFFT");
+    
+    pitch->input("spectrum").set(spectrum);
+    pitch->output("pitch").set(pitchReal);
+    pitch->output("pitchConfidence").set(pitchConfidence);
+    
+    pitch->output("pitch").set(pitchReal);
+    
+    Algorithm* RMS = factory.create("RMS");
+    
+    Real spectralFlatnessReal;
+    Algorithm* spectralFlatness = factory.create("FlatnessDB");
+    spectralFlatness->input("array").set(spectrum);
+    spectralFlatness->output("flatnessDB").set(spectralFlatnessReal);
     
     //Central Moments
     Algorithm* centralMoments = factory.create("CentralMoments",
@@ -537,6 +793,12 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
         
         framePool.clear();
         
+        //Reset MHD descriptors
+        spectralFlatness->reset();
+        pitch->reset();
+        
+        bands->reset();
+        
         //Start the frame cutter
         while (true) {
             
@@ -554,23 +816,31 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
             //Spectrum and MFCC
             w->compute();
             spec->compute();
-            mfcc->compute();
             
-            framePool.add("mfcc",mfccCoeffs);
+//            //MFCC
+//            mfcc->compute();
+//            framePool.add("mfcc",mfccCoeffs);
             
             centroid->compute();
             
             framePool.add("spectral_centroid", spectralCentroid);
             
-            erbBands->compute();
-            framePool.add("erbbands", bands);
+            bands->compute();
+            framePool.add("bands", bandsVector);
             
             centralMoments->compute();
             distShape->compute();
             
-            framePool.add("spectral_spread", spread);
-            framePool.add("spectral_skewness", skewness);
-            framePool.add("spectral_kurtosis", kurtosis);
+            //MHD
+            pitch->compute();
+            framePool.add("pitch", pitchReal);
+            
+            spectralFlatness->compute();
+            framePool.add("flatness", spectralFlatnessReal);
+            
+//            framePool.add("spectral_spread", spread);
+//            framePool.add("spectral_skewness", skewness);
+//            framePool.add("spectral_kurtosis", kurtosis);
         }
         
         //Time to aggregate
@@ -591,84 +861,96 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
         }
 
         
-        //Compute and add the global features
-        zcr->reset();
-        zcr->input("signal").set(*sliceIterator);
-        zcr->compute();
+//        //Compute and add the global features
+//        zcr->reset();
+//        zcr->input("signal").set(*sliceIterator);
+//        zcr->compute();
+//        
+//        lat->reset();
+//        lat->input("signal").set(*sliceIterator);
+//        lat->compute();
+//        
+//        envelope->reset();
+//        envelope->input("signal").set(*sliceIterator);
+//        envelope->compute();
+//        
+//        tct->reset();
+//        tct->compute();
+//        
+//        aggrPool.add("zcr", zcrReal);
+//        aggrPool.add("lat", latReal);
+//        aggrPool.add("tct", tctReal);
+
+        Real rmsValue;
+        RMS->reset();
+        RMS->input("array").set(*sliceIterator);
+        RMS->output("rms").set(rmsValue);
+        RMS->compute();
+
+        aggrPool.add("RMS", rmsValue);
         
-        lat->reset();
-        lat->input("signal").set(*sliceIterator);
-        lat->compute();
-        
-        envelope->reset();
-        envelope->input("signal").set(*sliceIterator);
-        envelope->compute();
-        
-        tct->reset();
-        tct->compute();
-        
-        aggrPool.add("zcr", zcrReal);
-        aggrPool.add("lat", latReal);
-        aggrPool.add("tct", tctReal);
         
         //Get the mean of the erbBands to get lo/mid/hi
         
         std::map< std::string, std::vector<Real > >  vectors = aggrPool.getRealPool();
         
-        vector<Real> aggrBands = vectors["erbbands.mean"];
+        vector<Real> aggrBands = vectors["bands.mean"];
         
         Algorithm* mean = factory.create("Mean");
         
+        
+        //=========== ERB STUFF =========
         //Get erbLo
         vector<Real>::const_iterator first = aggrBands.begin();
-        vector<Real>::const_iterator last = aggrBands.begin() + 7;
-        vector<Real> erbLoBands(first, last);
+        vector<Real>::const_iterator last = aggrBands.begin() + 2;
+        vector<Real> loBands(first, last);
         
-        Real erbLo;
-        mean->input("array").set(erbLoBands);
-        mean->output("mean").set(erbLo);
+        Real loValue;
+        mean->input("array").set(loBands);
+        mean->output("mean").set(loValue);
         mean->compute();
-        aggrPool.add("erbLo", erbLo);
+        aggrPool.add("loValue", loValue);
         
         //Get erbMid
-        first = aggrBands.begin()+7;
-        last = aggrBands.begin()+28;
-        vector<Real> erbMidBands(first, last);
+        first = aggrBands.begin()+2;
+        last = aggrBands.begin()+5;
+        vector<Real> midBands(first, last);
         
-        Real erbMid;
+        Real midValue;
         
         mean->reset();
-        mean->input("array").set(erbMidBands);
-        mean->output("mean").set(erbMid);
+        mean->input("array").set(midBands);
+        mean->output("mean").set(midValue);
         mean->compute();
-        aggrPool.add("erbMid", erbMid);
+        aggrPool.add("midValue", midValue);
         
         //Get erbHi
-        first = aggrBands.begin()+28;
-        last = aggrBands.end();
-        vector<Real> erbHiBands(first, last);
+        first = aggrBands.begin()+5;
+//        last = aggrBands.end();
+        last = aggrBands.begin()+10;
+        vector<Real> hiBands(first, last);
         
-        Real erbHi;
+        Real hiValue;
         
         mean->reset();
-        mean->input("array").set(erbHiBands);
-        mean->output("mean").set(erbHi);
+        mean->input("array").set(hiBands);
+        mean->output("mean").set(hiValue);
         mean->compute();
-        aggrPool.add("erbHi", erbHi);
+        aggrPool.add("hiValue", hiValue);
         
         //Remove the original full erbBand vectors
-        aggrPool.remove("erbbands.mean");
-        aggrPool.remove("erbbands.var");
+        aggrPool.remove("bands.mean");
+        aggrPool.remove("bands.var");
         
-
-
-        //Remove/Add mfcc vector
-        vector<Real> aggrBandsMean = vectors["mfcc.mean"];
-        vector<Real> aggrBandsVar = vectors["mfcc.var"];
-        aggrPool.remove("mfcc.mean");
-        aggrPool.remove("mfcc.var");
-        aggrPool.add("mfcc.mean", aggrBandsMean);
-        aggrPool.add("mfcc.var", aggrBandsVar);
+//        //Remove/Add mfcc vector
+//        vector<Real> aggrBandsMean = vectors["mfcc.mean"];
+//        vector<Real> aggrBandsVar = vectors["mfcc.var"];
+//        aggrPool.remove("mfcc.mean");
+//        aggrPool.remove("mfcc.var");
+//        aggrPool.add("mfcc.mean", aggrBandsMean);
+//        aggrPool.add("mfcc.var", aggrBandsVar);
+        
+        aggrPool.add("BPM", BPM);
         
         //If you want to output individual aggregate pools
         if(outputAggrPool) {
@@ -683,11 +965,14 @@ Pool EssentiaExtractor::extractFeatures(vector<vector<Real> >& slices)
         onsetPool.merge(aggrPool, "append");
     }
     
+    onsetPool.remove("BPM");
+    onsetPool.remove("RMS");
+    onsetPool.remove("flatness.mean");
+    onsetPool.remove("flatness.var");
+    onsetPool.remove("pitch.mean");
+    onsetPool.remove("pitch.var");
+    onsetPool.remove("spectral_centroid.mean");
+    onsetPool.remove("spectral_centroid.var");
+//    std::cout << onsetPool.descriptorNames();
     return onsetPool;
-}
-
-EssentiaExtractor::~EssentiaExtractor()
-{
-    //Call this globally
-//    essentia::shutdown();
 }

@@ -2,6 +2,7 @@
 #define TARGETAUDIOCOMPONENT_INCLUDED
 
 #include "AudioPlaybackDemo.h"
+#include "DataComponent.h"
 
 
 
@@ -20,7 +21,7 @@ public:
     
     OwnedArray<Slider> onsetSliders;
     
-    TargetAudioComponent(AudioDeviceManager* deviceManager) : AudioPlaybackDemo(deviceManager)
+    TargetAudioComponent(AudioDeviceManager* deviceManager, DataComponent* dataComponent) : AudioPlaybackDemo(deviceManager)
     {
         addAndMakeVisible (fileLoadButton);
         fileLoadButton.setButtonText ("Load Sample");
@@ -32,6 +33,9 @@ public:
         showOnsetSimilarityButton.setButtonText("Show Onset Similarity");
         showOnsetSimilarityButton.addListener(this);
         showOnsetSimilarityButton.setColour (TextButton::buttonColourId, Colour (0xff79ed7f));
+        
+        this->dataComponent = dataComponent;
+        datasetExtractor = &dataComponent->extractor;
     }
     
 private:
@@ -39,6 +43,9 @@ private:
     ToggleButton showOnsetSimilarityButton;
     
     Slider barSlider;
+    
+    DataComponent* dataComponent;
+    EssentiaExtractor* datasetExtractor;
 
     void showFile (const File& file) override
     {
@@ -49,9 +56,26 @@ private:
         currentTargetData.onsets = extractor.extractOnsets(currentTargetData.onsetTimes, currentTargetData.signal);
         currentTargetData.onsetPeakValues = extractor.extractPeakValues(currentTargetData.onsets);
         
-        Pool features = extractor.extractFeatures(currentTargetData.onsets);
+        Pool features = extractor.extractFeatures(currentTargetData.onsets, 0.0f);
         featureMatrix = extractor.poolToMat(features);
-        thumbnail->setOnsetMarkers(currentTargetData.onsetTimes);
+
+//        datasetExtractor->knnClassify(featureMatrix, 5);
+        updateClusters();
+    }
+    
+    void updateClusters()
+    {
+//        cv::Mat labels = extractor.kMeans(featureMatrix, clusterSlider.getValue());
+        cv::Mat labels = datasetExtractor->knnClassify(featureMatrix, 3);
+        std::vector<int> labelsVector;
+        
+        for(int i=0; i<labels.rows; i++)
+            labelsVector.push_back((int)labels.at<float>(i,0));
+        
+        float duration = (float)currentTargetData.signal.size() / 44100.0;
+        
+        thumbnail->setOnsetColours(labelsVector);
+        thumbnail->setOnsetMarkers(currentTargetData.onsetTimes, duration);
     }
     
     void resized () override
@@ -89,10 +113,23 @@ private:
                     showFile (chosenFile);
             }
         } else if(buttonThatWasClicked == &showOnsetSimilarityButton) {
-            AudioPlaybackDemo::thumbnail->showOnsetSimilarities = true;
-            AudioPlaybackDemo::thumbnail->repaint();
+            AudioPlaybackDemo::thumbnail->showOnsetSimilarities = showOnsetSimilarityButton.getToggleState();
+            AudioPlaybackDemo::thumbnail->updateOnsetSliders();
         }
     }
+    
+    
+    void sliderValueChanged	(Slider * 	slider)
+    {
+        if(slider == &clusterSlider) {
+            if(!featureMatrix.empty()) {
+                updateClusters();
+                AudioPlaybackDemo::thumbnail->updateOnsetSliders();                
+            }
+        }
+        AudioPlaybackDemo::sliderValueChanged(slider);
+    }
+
     
 //        void updateOnsetSliders()
 //        {

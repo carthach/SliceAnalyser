@@ -9,6 +9,10 @@
 #ifndef DATATAB_INCLUDED
 #define DATATAB_INCLUDED
 
+#ifndef JUCE_USE_MP3AUDIOFORMAT
+#define JUCE_USE_MP3AUDIOFORMAT 1
+#endif
+
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "EssentiaExtractor.h"
 #include "DataTableComponent.h"
@@ -69,14 +73,19 @@ public:
     
     ListBox sourceListBox, destinationListBox;
     ListBoxContents sourceModel, destinationModel;
-    TextButton selectionLeftButton, allLeftButton, selectionRightButton, allRightButton, updateFeaturesButton;
+    TextButton selectionLeftButton, allLeftButton, selectionRightButton, allRightButton, updateFeaturesButton, outputLoopButton;
     
-    DataTableComponent tableComponent;        
+    DataTableComponent tableComponent;
+    EssentiaExtractor extractor;
 
   
     DataComponent() : extractor(&formatManager)
     {
         formatManager.registerBasicFormats();
+        
+        String formats = formatManager.getWildcardForAllFormats();
+        
+//        formatManager.registerFormat(&coreAudioFormat, false);
         
         addAndMakeVisible (fileLoadButton);
         fileLoadButton.setButtonText ("Load Folder");
@@ -88,7 +97,11 @@ public:
         buildDatasetButton.addListener(this);
         buildDatasetButton.setColour (TextButton::buttonColourId, Colour (0xff79ed7f));
         
-
+        addAndMakeVisible (outputLoopButton);
+        outputLoopButton.setButtonText ("Output Loop");
+        outputLoopButton.addListener(this);
+        outputLoopButton.setColour (TextButton::buttonColourId, Colour (0xff79ed7f));
+        
         sourceListBox.setModel(&sourceModel);
         sourceListBox.setMultipleSelectionEnabled (true);        
         addAndMakeVisible (sourceListBox);
@@ -131,6 +144,7 @@ public:
         
             if(File(lastDatasetFile).existsAsFile()) {
                 loadDataset(lastDatasetFile);
+                
             }
         }
         
@@ -158,6 +172,9 @@ public:
         fileLoadButton.setBounds (10, 5, 100, 50);
         buildDatasetButton.setBounds (110, 5, 100, 50);
         datasetFolderTextBox.setBounds (226, 16, 300, 25);
+
+        outputLoopButton.setBounds (550, 5, 100, 50);
+        
         sourceListBox.setTopLeftPosition(15, 100);
         sourceListBox.setSize(200, 250);
         destinationListBox.setTopLeftPosition(325, 100);
@@ -170,7 +187,7 @@ public:
         allRightButton.setBounds(buttonPos.withY(200));
 
         updateFeaturesButton.setSize(75, 25);
-        updateFeaturesButton.setCentrePosition(buttonPos.getX(), 250);
+        updateFeaturesButton.setCentrePosition(buttonPos.getX()+25, 250);
         
         
         tableComponent.setBounds(bottom);
@@ -200,7 +217,7 @@ public:
 private:
     TextButton fileLoadButton, buildDatasetButton;
     AudioFormatManager formatManager;
-    EssentiaExtractor extractor;
+    CoreAudioFormat coreAudioFormat;
     HashMap<String, int> featureMap;
 
 
@@ -256,6 +273,10 @@ private:
         {
             buildDataset(datasetFolder);
         }
+        else if (buttonThatWasClicked == &outputLoopButton)
+        {
+
+        }
         
         this->datasetFolder = datasetFolder;
         propertiesFile->setValue("lastDatasetFolder", datasetFolder.getFullPathName());
@@ -265,6 +286,8 @@ private:
     void loadDataset(const String& jsonFile)
     {
         extractor.loadDataset(jsonFile);
+        
+        //Create KNN
         updateData();
     }
     
@@ -300,7 +323,7 @@ private:
             destinationModel.visibleData.add(i);
         destinationListBox.updateContent();
         
-        clusterData(featureMatrix);
+//        clusterData(featureMatrix);
         
 //        datasetFolderTextBox.setColour(TextEditor::ColourIds::backgroundColourId, Colours::lightgreen);
     }

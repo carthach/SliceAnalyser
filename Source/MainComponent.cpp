@@ -13,14 +13,15 @@
 #include "GenAudioComponent.h"
 #include "TargetAudioComponent.h"
 #include "DataComponent.h"
-#include "VisualComponent.h"
+#include "Box2DComponent.h"
+#include "Visualisation.h"
 
 class AudioTab : public Component
 {
 public:
     ApplicationProperties applicationProperties;
     
-    AudioTab(AudioDeviceManager* deviceManager, DataComponent* dataComponent) : targetAudioComponent(deviceManager), genAudioComponent(deviceManager, &targetAudioComponent, dataComponent)
+    AudioTab(AudioDeviceManager* deviceManager, DataComponent* dataComponent) : targetAudioComponent(deviceManager, dataComponent), genAudioComponent(deviceManager, &targetAudioComponent, dataComponent)
     {
         addAndMakeVisible(targetAudioComponent);
         addAndMakeVisible(genAudioComponent);
@@ -76,12 +77,15 @@ public:
     MainTab (AudioDeviceManager* deviceManager)
     : TabbedComponent (TabbedButtonBar::TabsAtTop)
     {
+        setSize (1280, 1024);
+        
         //Need to do it like this so that the Audio gets a pointer to the dataComponent
         DataComponent* dataComponent = new DataComponent();
         addTab ("Audio", Colours::grey, new AudioTab(deviceManager, (DataComponent* )dataComponent), true);
         addTab ("Data",  Colours::grey, dataComponent, true);
-        addTab ("Explorer",  Colours::grey, new Box2DDemo(), true);
-
+        addTab ("Explorer",  Colours::grey, new Visualisation(), true);
+        addTab ("Box2D",  Colours::grey, new Box2DDemo(), true);
+        
 //        addTab ("Table",            Colours::grey, new TableTab(),           true);            
     }
 };
@@ -104,7 +108,7 @@ public:
         setAudioChannels (2, 2);
         
         addAndMakeVisible(mainTab);
-
+        
 //        setLookAndFeel(&lookAndFeel);
         
 

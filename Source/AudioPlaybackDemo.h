@@ -99,6 +99,37 @@ public:
             updateOnsetSliders();
         repaint();
     }
+    
+    void updateOnsetSliders()
+    {
+        onsetSliders.clearQuick(true);
+        
+        if(showOnsetSimilarities)
+        {
+            for(int i=0; i<onsetTimes.size(); i++) {
+                onsetSliders.add(new Slider());
+                
+                addAndMakeVisible (onsetSliders[i]);
+                onsetSliders[i]->setSliderStyle (Slider::LinearBarVertical);
+                
+                onsetSliders[i]->setTopLeftPosition(timeToX(onsetTimes[i]) - 0.75f, 0);
+                float width =  timeToX(onsetTimes[i+1]) - timeToX(onsetTimes[i]);
+                
+                if(i == onsetTimes.size()-1)
+                    width = timeToX(duration) - onsetTimes[i];
+                
+                onsetSliders[i]->setSize(width , (getHeight() - scrollbar.getHeight()));
+                
+                onsetSliders[i]->setRange(0.0,1.0);
+                onsetSliders[i]->setValue(1.0);
+                //            onsetSliders[i]->setColour(Slider::ColourIds::thumbColourId, Colours::blue.withAlpha((float)0.4));
+                
+                onsetSliders[i]->setColour(Slider::ColourIds::thumbColourId, colourMap[colourLabels[i]].withAlpha((float)0.4));
+                
+                onsetSliders[i]->setColour(Slider::ColourIds::textBoxTextColourId, Colours::white);
+            }
+        }
+    }
 
     void setFollowsTransport (bool shouldFollow)
     {
@@ -179,9 +210,34 @@ public:
         }
     }
     
-    void setOnsetMarkers(const std::vector<float>& onsetTimes)
+    void setOnsetMarkers(const std::vector<float>& onsetTimes, float duration)
     {
         this->onsetTimes = onsetTimes;
+        this->duration = duration;
+        
+        updateOnsetMarkers();
+    }
+    
+    void setOnsetColours(const std::vector<int>& labels)
+    {
+        colourLabels = labels;
+        colourMap.clear();
+//
+//
+//        
+//        for(int i=0; i < labels.size(); i++) {
+//            if(!colourMap.count(labels[i])) {
+//                Colour c(random.nextInt(255), random.nextInt(255), random.nextInt(255));
+//                colourMap[labels[i]] = c;
+//            }
+//        }
+        
+        colourMap[0] = Colours::red;
+        colourMap[1] = Colours::blue;
+        colourMap[2] = Colours::green;
+        colourMap[3] = Colours::yellow;
+        colourMap[4] = Colours::orange;
+        
         
         updateOnsetMarkers();
     }
@@ -201,6 +257,13 @@ private:
     
     OwnedArray<DrawableRectangle> onsetMarkers;
     OwnedArray<Slider> onsetSliders;
+    
+    std::vector<int> colourLabels;
+    std::map<int, Colour> colourMap;
+    
+    float duration;
+    
+    Random random;
 
     float timeToX (const double time) const
     {
@@ -255,26 +318,6 @@ private:
         }
     }
     
-    void updateOnsetSliders()
-    {
-        onsetSliders.clearQuick(true);
-        
-        for(int i=0; i<onsetTimes.size(); i++) {
-            onsetSliders.add(new Slider());
-            
-            addAndMakeVisible (onsetSliders[i]);
-            onsetSliders[i]->setSliderStyle (Slider::LinearBarVertical);
-            
-            onsetSliders[i]->setTopLeftPosition(timeToX(onsetTimes[i]) - 0.75f, 0);
-            float width =  timeToX(onsetTimes[i+1]) - timeToX(onsetTimes[i]);
-            onsetSliders[i]->setSize(width , (getHeight() - scrollbar.getHeight()));
-            
-            onsetSliders[i]->setRange(0.0,1.0);
-            onsetSliders[i]->setValue(1.0);
-            onsetSliders[i]->setColour(Slider::ColourIds::thumbColourId, Colours::blue.withAlpha((float)0.4));
-            onsetSliders[i]->setColour(Slider::ColourIds::textBoxTextColourId, Colours::white);
-        }
-    }
 };
 
 //==============================================================================
@@ -316,6 +359,14 @@ public:
         volumeLabel.setEditable (false, false, false);
         volumeLabel.setColour (TextEditor::textColourId, Colours::black);
         volumeLabel.setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+        
+        addAndMakeVisible (clusterLabel);
+        clusterLabel.setText ("Clusters:", dontSendNotification);
+        clusterLabel.setFont (Font (15.00f, Font::plain));
+        clusterLabel.setJustificationType (Justification::centredRight);
+        clusterLabel.setEditable (false, false, false);
+        clusterLabel.setColour (TextEditor::textColourId, Colours::black);
+        clusterLabel.setColour (TextEditor::backgroundColourId, Colour (0x00000000));
 
         addAndMakeVisible (followTransportButton);
         followTransportButton.setButtonText ("Follow Transport");
@@ -347,7 +398,14 @@ public:
         volumeSlider.addListener (this);
         volumeSlider.setSkewFactor (2);
         volumeSlider.setValue(1.0);
-
+        
+        addAndMakeVisible (clusterSlider);
+        clusterSlider.setRange (1, 10, 1);
+        clusterSlider.setSliderStyle (Slider::IncDecButtons);
+        clusterSlider.setTextBoxStyle (Slider::TextBoxRight, false, 80, 20);
+        clusterSlider.addListener (this);
+        clusterSlider.setValue(3.0);
+        
         addAndMakeVisible (thumbnail = new DemoThumbnailComp (formatManager, transportSource, zoomSlider));
         thumbnail->addChangeListener (this);
 
@@ -411,6 +469,7 @@ public:
         controlsRight.removeFromTop(25);
         zoomLabel.setBounds (zoom.removeFromLeft (50));
         zoomSlider.setBounds (zoom);
+
         
         Rectangle<int> buttonPos = controlsLeft.withSize(100, 50);
         startStopButton.setBounds (buttonPos);
@@ -426,6 +485,12 @@ public:
         
         volumeSlider.setTopLeftPosition(similarityPos.getX()+volumeLabel.getWidth(), similarityPos.getY()+30);
         volumeSlider.setSize(400, 25);
+        
+        clusterLabel.setTopLeftPosition(volumeLabel.getX(), volumeLabel.getY()+20);
+        clusterLabel.setSize(75 , 25);
+        
+        clusterSlider.setTopLeftPosition(volumeSlider.getX(), volumeSlider.getY()+20);
+        clusterSlider.setSize(200, 25);
 
 //        fileTreeComp.setBounds (r);
     }
@@ -466,6 +531,7 @@ public:
     
 protected:
     TextButton startStopButton, extractFeaturesButton;
+    Slider clusterSlider;
 
     
     void sliderValueChanged (Slider* sliderThatWasMoved) override
@@ -483,7 +549,7 @@ private:
 
     AudioSourcePlayer audioSourcePlayer;
 
-    Label zoomLabel, explanation, volumeLabel;
+    Label zoomLabel, explanation, volumeLabel, clusterLabel;
     Slider zoomSlider, volumeSlider;
     ToggleButton followTransportButton, loopButton;
     

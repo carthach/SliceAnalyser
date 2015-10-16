@@ -2,12 +2,23 @@
 
 <JUCERPROJECT id="B5vL8j" name="sliceAnalyser" projectType="guiapp" version="1.0.0"
               bundleIdentifier="com.yourcompany.sliceAnalyser" includeBinaryInAppConfig="1"
-              jucerVersion="3.1.1">
+              jucerVersion="3.2.0">
   <MAINGROUP id="putndE" name="sliceAnalyser">
     <GROUP id="{20F709EA-5E30-099A-39FE-9F04AD691B2D}" name="Source">
-      <FILE id="Ui1mPK" name="VisualWorld.h" compile="0" resource="0" file="Source/VisualWorld.h"/>
-      <FILE id="rbMb1R" name="VisualComponent.h" compile="0" resource="0"
-            file="Source/VisualComponent.h"/>
+      <GROUP id="{53A4060D-F37E-A336-1EFD-01143F78B13C}" name="Visualisation">
+        <FILE id="cFSyz3" name="Radar.cpp" compile="1" resource="0" file="Source/Radar.cpp"/>
+        <FILE id="tRDhWQ" name="Radar.h" compile="0" resource="0" file="Source/Radar.h"/>
+        <FILE id="kyNLs4" name="Visualisation.h" compile="0" resource="0" file="Source/Visualisation.h"/>
+        <FILE id="Vi6DhT" name="Element.cpp" compile="1" resource="0" file="Source/Element.cpp"/>
+        <FILE id="zsjpDV" name="Element.h" compile="0" resource="0" file="Source/Element.h"/>
+      </GROUP>
+      <GROUP id="{9EBE5823-10FD-94E2-225C-9C192BA82A34}" name="Box2D">
+        <FILE id="Ui1mPK" name="MyWorld.h" compile="0" resource="0" file="Source/MyWorld.h"/>
+        <FILE id="rbMb1R" name="Box2DComponent.h" compile="0" resource="0"
+              file="Source/Box2DComponent.h"/>
+      </GROUP>
+      <FILE id="PD9O8Z" name="RubberBand.cpp" compile="1" resource="0" file="Source/RubberBand.cpp"/>
+      <FILE id="nxrspT" name="RubberBand.h" compile="0" resource="0" file="Source/RubberBand.h"/>
       <FILE id="GA83cx" name="AudioPlaybackDemo.h" compile="0" resource="0"
             file="Source/AudioPlaybackDemo.h"/>
       <FILE id="ZWfSpK" name="DataComponent.h" compile="0" resource="0" file="Source/DataComponent.h"/>
@@ -28,14 +39,14 @@
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
-    <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="" externalLibraries="/usr/local/lib/libessentia-light.a&#10;tag&#10;yaml&#10;opencv_core">
+    <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="" externalLibraries="/usr/local/lib/libessentia-light.a&#10;tag&#10;yaml&#10;opencv_core&#10;opencv_ml">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
-                       isDebug="1" optimisation="1" targetName="sliceAnalyser" headerPath="/usr/local/include"
-                       libraryPath="/usr/local/lib"/>
+                       isDebug="1" optimisation="1" targetName="sliceAnalyser" headerPath="/usr/local/include&#10;/Users/carthach/Dev/bitbucket/rubberband/rubberband"
+                       libraryPath="/usr/local/lib&#10;/Users/carthach/Dev/bitbucket/rubberband/lib"/>
         <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
-                       isDebug="0" optimisation="3" targetName="sliceAnalyser" headerPath="/usr/local/include"
-                       libraryPath="/usr/local/lib"/>
+                       isDebug="0" optimisation="3" targetName="sliceAnalyser" headerPath="/usr/local/include&#10;/Users/carthach/Dev/bitbucket/rubberband/rubberband"
+                       libraryPath="/usr/local/lib&#10;/Users/carthach/Dev/bitbucket/rubberband/lib"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="../../git/JUCE/modules"/>

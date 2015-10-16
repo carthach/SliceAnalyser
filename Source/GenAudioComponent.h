@@ -6,12 +6,14 @@
 #include "MyIncludes.h"
 #include "TargetAudioComponent.h"
 #include "DataComponent.h"
+#include "RubberBandStretcher.h"
 
 class GenAudioComponent : public AudioPlaybackDemo
 {
 
 public:
-    GenAudioComponent(AudioDeviceManager* deviceManager, TargetAudioComponent* targetAudioComponent, DataComponent* dataComponent) : AudioPlaybackDemo(deviceManager)
+    GenAudioComponent(AudioDeviceManager* deviceManager, TargetAudioComponent* targetAudioComponent, DataComponent* dataComponent) : AudioPlaybackDemo(deviceManager),
+        rubberBandStretcher(44100, 1, RubberBand::RubberBandStretcher::DefaultOptions)
     {
         
         addAndMakeVisible (fileLoadButton);
@@ -81,6 +83,8 @@ private:
     bool transportLinked = false;
     Slider similaritySlider, smoothStartSlider, smoothEndSlider;
     Label similarityLabel, smoothStartLabel, smoothEndLabel;
+    
+    RubberBand::RubberBandStretcher rubberBandStretcher;
 
     bool distanceMatrixGenerated = false;
     
@@ -91,7 +95,9 @@ private:
         std::vector<float> signal = extractor.audioFileToVector(file);
         std::vector<float> onsetTimes = extractor.extractOnsetTimes(signal);
         
-        thumbnail->setOnsetMarkers(onsetTimes);
+        float duration = (float)signal.size() / 44100.0;
+        
+        thumbnail->setOnsetMarkers(onsetTimes, duration);
     }
         
     void resized () override
@@ -131,9 +137,11 @@ private:
     void buttonClicked (Button* buttonThatWasClicked) override
     {
         if(buttonThatWasClicked == &fileLoadButton) {
-            generateDistanceMatrix(); //Need to figure out how not to recompute this everytime
-            generateSimilarityMatrix();
-            generateNewClip();
+//            generateDistanceMatrix(); //Need to figure out how not to recompute this everytime
+//            generateSimilarityMatrix();
+//            generateNewClip();
+            
+            slowDownTarget();
         } else if(buttonThatWasClicked == &linkTransportButton) {
             transportLinked = linkTransportButton.getToggleState();
         } else if (buttonThatWasClicked == &startStopButton && linkTransportButton.getToggleState())
@@ -185,8 +193,6 @@ private:
         cv::Mat reducedTargetMatrix = dataComponent->getSelectedFeatureMatrix(headerData, targetMatrix);
         cv::Mat reducedDatasetMatrix = dataComponent->getSelectedFeatureMatrix(headerData, datasetMatrix);
         
-
-
         //Merge matrices
         reducedDatasetMatrix.push_back(reducedTargetMatrix);
         
@@ -222,6 +228,44 @@ private:
     void sliderValueChanged (Slider* sliderThatWasMoved) override
     {
         AudioPlaybackDemo::sliderValueChanged(sliderThatWasMoved);
+    }
+    
+    void slowDownTarget()
+    {
+        using namespace RubberBand;
+        rubberBandStretcher.reset();
+        
+        TargetAudioComponent::CurrentTargetData* targetData = &targetAudioComponent->currentTargetData;
+        
+        float *monoInputPtr[2];
+        monoInputPtr[0] = targetData->signal.data();
+        
+        rubberBandStretcher.setTimeRatio(50.0);
+        rubberBandStretcher.study(monoInputPtr, targetData->signal.size(), true);
+        rubberBandStretcher.setMaxProcessSize(targetData->signal.size());
+        rubberBandStretcher.process(monoInputPtr, targetData->signal.size(), true);
+        
+        float * monoOutputPtr[2];
+        
+        int noOfOutputSamples = rubberBandStretcher.available();
+        
+        monoOutputPtr[0] = (float* )malloc(noOfOutputSamples*sizeof(float));
+        
+        rubberBandStretcher.retrieve(monoOutputPtr, rubberBandStretcher.available());
+     
+        String audioFilename = "/Users/carthach/Desktop/out.wav";
+        
+        if(File(audioFilename).existsAsFile())
+            File(audioFilename).deleteFile();
+        
+        std::vector<float> sampleVector;
+        
+        for(int i=0; i < noOfOutputSamples; i++)
+            sampleVector.push_back(monoOutputPtr[0][i]);
+
+        extractor.vectorToAudioFile(sampleVector,audioFilename);
+                
+        showFile(File(audioFilename));
     }
     
     

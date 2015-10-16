@@ -120,7 +120,7 @@ public:
 //        if (columnId == 1 || columnId == 7) // The ID and Length columns do not have a custom component
         if (rowNumber > 0) // The ID and Length columns do not have a custom component
         {
-            jassert (existingComponentToUpdate == 0);
+//            jassert (existingComponentToUpdate == 0);
             return 0;
         }
         else if (rowNumber == 0) // For the ratings column, we return the custom combobox component
