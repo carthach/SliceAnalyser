@@ -2,11 +2,10 @@
 #define GENAUDIO_INCLUDED
 
 #include "AudioPlaybackDemo.h"
-#include "EssentiaExtractor.h"
-#include "MyIncludes.h"
 #include "TargetAudioComponent.h"
 #include "DataComponent.h"
 #include "RubberBandStretcher.h"
+#include "Muce.h"
 
 class GenAudioComponent : public AudioPlaybackDemo
 {
@@ -88,11 +87,14 @@ private:
 
     bool distanceMatrixGenerated = false;
     
+    Muce::Audio audio;
+    Muce::Extraction extractor;
+    
     void showFile (const File& file) override
     {
         AudioPlaybackDemo::showFile(file);
         
-        std::vector<float> signal = extractor.audioFileToVector(file);
+        std::vector<float> signal = audio.audioFileToVector(file);
         std::vector<float> onsetTimes = extractor.extractOnsetTimes(signal);
         
         float duration = (float)signal.size() / 44100.0;
@@ -263,7 +265,7 @@ private:
         for(int i=0; i < noOfOutputSamples; i++)
             sampleVector.push_back(monoOutputPtr[0][i]);
 
-        extractor.vectorToAudioFile(sampleVector,audioFilename);
+        audio.vectorToAudioFile(sampleVector,audioFilename);
                 
         showFile(File(audioFilename));
     }
@@ -302,9 +304,9 @@ private:
         //Place the new onsets at the sample times of the original
         for(int i=0; i<newOnsetPattern.size(); i++) {
             String audioFilename = audioFilenameRoot + "slice_" + String(newOnsetPattern[i]) + ".wav";
-            vector<float> onsetVector = extractor.audioFileToVector(File(audioFilename));
+            std::vector<float> onsetVector = audio.audioFileToVector(File(audioFilename));
             
-            vector<float> hannWindow = extractor.hannWindow(onsetVector.size());
+            std::vector<float> hannWindow = audio.hannWindow(onsetVector.size());
             
             int startSmoothSample = smoothStartSlider.getValue() * (float)onsetVector.size();
             int endSmoothSample = smoothEndSlider.getValue() * (float)onsetVector.size();
@@ -326,7 +328,7 @@ private:
         if(File(audioFilename).existsAsFile())
             File(audioFilename).deleteFile();
         
-        extractor.vectorToAudioFile(sampleVector, audioFilename);
+        audio.vectorToAudioFile(sampleVector, audioFilename);
         
         showFile(File(audioFilename));
     }

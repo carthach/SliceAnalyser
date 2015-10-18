@@ -5,6 +5,17 @@
               jucerVersion="3.2.0">
   <MAINGROUP id="putndE" name="sliceAnalyser">
     <GROUP id="{20F709EA-5E30-099A-39FE-9F04AD691B2D}" name="Source">
+      <FILE id="a4N1PU" name="MIR.cpp" compile="1" resource="0" file="Source/MIR.cpp"/>
+      <FILE id="bPWgy4" name="MIR.h" compile="0" resource="0" file="Source/MIR.h"/>
+      <GROUP id="{C6C9282B-C96F-BBE9-701D-8DDB096469C8}" name="Muce">
+        <FILE id="zi3koh" name="Audio.cpp" compile="1" resource="0" file="Source/Audio.cpp"/>
+        <FILE id="qdROsD" name="Audio.h" compile="0" resource="0" file="Source/Audio.h"/>
+        <FILE id="c7FGI2" name="Extraction.cpp" compile="1" resource="0" file="Source/Extraction.cpp"/>
+        <FILE id="XEQrGd" name="Extraction.h" compile="0" resource="0" file="Source/Extraction.h"/>
+        <FILE id="NGufbG" name="Information.cpp" compile="1" resource="0" file="Source/Information.cpp"/>
+        <FILE id="RfZv51" name="Information.h" compile="0" resource="0" file="Source/Information.h"/>
+        <FILE id="wqTNyb" name="Muce.h" compile="0" resource="0" file="Source/Muce.h"/>
+      </GROUP>
       <GROUP id="{53A4060D-F37E-A336-1EFD-01143F78B13C}" name="Visualisation">
         <FILE id="cFSyz3" name="Radar.cpp" compile="1" resource="0" file="Source/Radar.cpp"/>
         <FILE id="tRDhWQ" name="Radar.h" compile="0" resource="0" file="Source/Radar.h"/>
@@ -39,13 +50,14 @@
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
-    <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="" externalLibraries="/usr/local/lib/libessentia-light.a&#10;tag&#10;yaml&#10;opencv_core&#10;opencv_ml">
+    <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="" externalLibraries="essentia&#10;tag&#10;yaml&#10;opencv_core&#10;opencv_ml&#10;rubberband">
       <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
+        <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="10.10 SDK" osxArchitecture="default"
                        isDebug="1" optimisation="1" targetName="sliceAnalyser" headerPath="/usr/local/include&#10;/Users/carthach/Dev/bitbucket/rubberband/rubberband"
                        libraryPath="/usr/local/lib&#10;/Users/carthach/Dev/bitbucket/rubberband/lib"/>
-        <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
-                       isDebug="0" optimisation="3" targetName="sliceAnalyser" headerPath="/usr/local/include&#10;/Users/carthach/Dev/bitbucket/rubberband/rubberband"
+        <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="10.10 SDK"
+                       osxArchitecture="default" isDebug="0" optimisation="3" targetName="sliceAnalyser"
+                       headerPath="/usr/local/include&#10;/Users/carthach/Dev/bitbucket/rubberband/rubberband"
                        libraryPath="/usr/local/lib&#10;/Users/carthach/Dev/bitbucket/rubberband/lib"/>
       </CONFIGURATIONS>
       <MODULEPATHS>

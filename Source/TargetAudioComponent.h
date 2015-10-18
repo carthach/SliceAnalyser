@@ -3,20 +3,18 @@
 
 #include "AudioPlaybackDemo.h"
 #include "DataComponent.h"
-
-
+#include "Muce.h"
 
 class TargetAudioComponent : public AudioPlaybackDemo
 {
 public:
     struct CurrentTargetData {
-        std::vector<Real> signal;
-        std::vector<Real> onsetTimes;
-        std::vector<std::vector<Real> > onsets;
-        std::vector<Real> onsetPeakValues;
+        std::vector<essentia::Real> signal;
+        std::vector<essentia::Real> onsetTimes;
+        std::vector<std::vector<essentia::Real> > onsets;
+        std::vector<essentia::Real> onsetPeakValues;
     };
     
-    cv::Mat featureMatrix;
     CurrentTargetData currentTargetData;
     
     OwnedArray<Slider> onsetSliders;
@@ -35,8 +33,9 @@ public:
         showOnsetSimilarityButton.setColour (TextButton::buttonColourId, Colour (0xff79ed7f));
         
         this->dataComponent = dataComponent;
-        datasetExtractor = &dataComponent->extractor;
     }
+    
+    cv::Mat featureMatrix;
     
 private:
     TextButton fileLoadButton;
@@ -45,28 +44,31 @@ private:
     Slider barSlider;
     
     DataComponent* dataComponent;
-    EssentiaExtractor* datasetExtractor;
+    Muce::Extraction extractor;
+    Muce::Information  information;
+    Muce::Audio audio;
+
 
     void showFile (const File& file) override
     {
         AudioPlaybackDemo::showFile(file);
         
-        currentTargetData.signal = extractor.audioFileToVector(file);
+        currentTargetData.signal = audio.audioFileToVector(file);
         currentTargetData.onsetTimes = extractor.extractOnsetTimes(currentTargetData.signal);
         currentTargetData.onsets = extractor.extractOnsets(currentTargetData.onsetTimes, currentTargetData.signal);
         currentTargetData.onsetPeakValues = extractor.extractPeakValues(currentTargetData.onsets);
         
-        Pool features = extractor.extractFeatures(currentTargetData.onsets, 0.0f);
-        featureMatrix = extractor.poolToMat(features);
+        essentia::Pool features = extractor.extractFeaturesFromOnsets(currentTargetData.onsets, 0.0f);
+        featureMatrix = information.poolToMat(features);
 
-//        datasetExtractor->knnClassify(featureMatrix, 5);
+//        information.knnClassify(featureMatrix, 5);
         updateClusters();
     }
     
     void updateClusters()
     {
-//        cv::Mat labels = extractor.kMeans(featureMatrix, clusterSlider.getValue());
-        cv::Mat labels = datasetExtractor->knnClassify(featureMatrix, 3);
+        cv::Mat labels = information.kMeans(featureMatrix, clusterSlider.getValue());
+//        cv::Mat labels = information.knnClassify(featureMatrix, 3);
         std::vector<int> labelsVector;
         
         for(int i=0; i<labels.rows; i++)

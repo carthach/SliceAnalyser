@@ -14,8 +14,8 @@
 #endif
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "EssentiaExtractor.h"
 #include "DataTableComponent.h"
+#include "Muce.h"
 
 //==============================================================================
 struct ListBoxContents  : public ListBoxModel
@@ -65,7 +65,6 @@ class DataComponent : public Component,
                 public FileDragAndDropTarget
 {
 public:
-    cv::Mat featureMatrix;
     PropertiesFile* propertiesFile;
     ApplicationProperties applicationProperties;
     File datasetFolder;
@@ -76,10 +75,16 @@ public:
     TextButton selectionLeftButton, allLeftButton, selectionRightButton, allRightButton, updateFeaturesButton, outputLoopButton;
     
     DataTableComponent tableComponent;
-    EssentiaExtractor extractor;
+    
 
-  
-    DataComponent() : extractor(&formatManager)
+    
+//    EssentiaExtractor extractor;
+    
+    Muce::Extraction extractor;
+    Muce::Information information;
+    cv::Mat featureMatrix;
+    
+    DataComponent()
     {
         formatManager.registerBasicFormats();
         
@@ -220,8 +225,6 @@ private:
     CoreAudioFormat coreAudioFormat;
     HashMap<String, int> featureMap;
 
-
-    
     void updateListBox(ListBox& fromListBox, ListBox& toListBox, ListBoxContents& fromModel,ListBoxContents& toModel)
     {
         const SparseSet<int>& selectedRows = fromListBox.getSelectedRows();
@@ -285,16 +288,17 @@ private:
     
     void loadDataset(const String& jsonFile)
     {
-        extractor.loadDataset(jsonFile);
+        essentia::Pool featurePool = extractor.loadFeatures(jsonFile);
         
         //Create KNN
-        updateData();
+        updateData(featurePool);
     }
     
     void buildDataset(const File& datasetFolder)
     {
-        extractor.buildDataset(File(datasetFolder.getFullPathName()), true);
-        updateData();
+        essentia::Pool featurePool = extractor.extractFeaturesFromFolder(File(datasetFolder.getFullPathName()), true);
+        
+        updateData(featurePool);
     }
     
     void updateTable()
@@ -304,10 +308,10 @@ private:
         tableComponent.updateData(headerData, data);
     }
     
-    void updateData()
+    void updateData(const essentia::Pool& pool)
     {
-        featureMatrix = extractor.globalPoolToMat();
-        StringArray featureList = extractor.featuresInPool();
+        featureMatrix = information.poolToMat(pool);
+        StringArray featureList = extractor.featuresInPool(pool);
         
         for(int i=0; i<featureList.size(); i++)
             featureMap.set(featureList[i], i);
@@ -328,11 +332,6 @@ private:
 //        datasetFolderTextBox.setColour(TextEditor::ColourIds::backgroundColourId, Colours::lightgreen);
     }
     
-    void clusterData(cv::Mat data)
-    {
-        cv::Mat labels;
-        cv::kmeans(data, 3, labels, cv::TermCriteria( cv::TermCriteria::EPS+cv::TermCriteria::COUNT, 10, 1.0), 3, cv::KMEANS_PP_CENTERS, cv::noArray());        
-    }
     
     bool isInterestedInFileDrag (const StringArray& /*files*/) override
     {

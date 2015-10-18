@@ -26,7 +26,7 @@
 #define AUDIOPLAYBACK_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "MyIncludes.h"
+#include "Muce.h"
 
 //==============================================================================
 class DemoThumbnailComp  : public Component,
@@ -332,14 +332,13 @@ public:
     Rectangle<int> controlsLeft;
     ScopedPointer<DemoThumbnailComp> thumbnail;
     AudioFormatManager formatManager;
-    EssentiaExtractor extractor;
+    Muce::Extraction extractor;
     AudioTransportSource transportSource;
     ScopedPointer<AudioFormatReaderSource> currentAudioFileSource;
 
     
     
     AudioPlaybackDemo(AudioDeviceManager* deviceManager) :
-          extractor(&formatManager),
           thread ("audio file preview"),
           directoryList (nullptr, thread),
           fileTreeComp (directoryList)

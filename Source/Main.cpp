@@ -28,7 +28,7 @@ public:
     void initialise (const String& commandLine) override
     {
         // This method is where you should put your application's initialisation code..
-                essentia::init();
+        essentia::init();
 
         mainWindow = new MainWindow (getApplicationName());
     }
@@ -36,6 +36,8 @@ public:
     void shutdown() override
     {
         // Add your application's shutdown code here..
+        
+        essentia::shutdown();
 
         mainWindow = nullptr; // (deletes our window)
     }
