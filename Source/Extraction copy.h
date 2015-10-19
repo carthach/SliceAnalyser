@@ -14,17 +14,15 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 #include <essentia/algorithmfactory.h>
-#include <essentia/streaming/algorithms/poolstorage.h>
-#include <essentia/scheduler/network.h>
-#include <essentia/streaming/algorithms/vectorinput.h>
+#include <essentia/essentiamath.h>
+#include <essentia/pool.h>
 
 #include "Audio.h"
 
 namespace Muce {
     using namespace std;
     using namespace essentia;
-    using namespace essentia::streaming;
-    using namespace essentia::scheduler;
+    using namespace essentia::standard;
     
     //Feature map typedefs
     typedef std::map<std::string, std::vector<Real> > RealMap;
@@ -65,9 +63,9 @@ namespace Muce {
         //Extract features for a vector of onsets
         
         //Build a whole dataset and output a json/yaml file
-        Pool extractFeaturesFromFiles(const File& audioFolder, bool writeOnsets);
+        Pool extractFeaturesFromFolder(const File& audioFolder, bool writeOnsets);
         Pool extractFeaturesFromOnsets(vector<vector<Real> >& slices, Real BPM);
-        Pool extractFeatures(vector<Real>& audio, Real BPM);
+        Pool extractFeatures(const vector<Real>& audio, Real BPM);
         
         
         //Music Hack Day
@@ -77,34 +75,56 @@ namespace Muce {
         
         StringArray featuresInPool(const Pool& pool);
         
-        Audio audioTools;
+        Audio audio;
         
     private:
-        //==========================ESSENTIA=========================
-        
-        VectorInput<Real>* vectorInput, *onsetVectorInput;
-        
         //Spectral
-        Algorithm* frameCutter, *window, *spec, *mfcc;
-        Algorithm* centroid;
-        Algorithm* spectralFlatness;
+        ScopedPointer<Algorithm> frameCutter, window, spec, mfcc;
+        
+        ScopedPointer<Algorithm> centroid;
+        
+        ScopedPointer<Algorithm> spectralFlatness;
 
         //Central Moments
-        Algorithm* centralMoments, *distShape;
-        Algorithm* bands;
+        ScopedPointer<Algorithm> centralMoments, distShape;
+        
+        ScopedPointer<Algorithm> bands;
         
         //Global
-        Algorithm* RMS, *zcr, *lat, *envelope, *tct;
-        standard::Algorithm* yamlOutput, *poolAggregator;
-        Algorithm* pitch;
+        ScopedPointer<Algorithm> RMS, zcr, lat, envelope, tct;
         
-        Algorithm* onsetRate;
+        ScopedPointer<Algorithm> yamlOutput, poolAggregator;
         
-        //This holds the framewise pool between files
-        Pool framePool, onsetPool;
-        vector<Real> frameBuffer;
+        ScopedPointer<Algorithm> pitch;
         
-        Network* network, *onsetVectorNetwork;
+        // FrameCutter -> Windowing -> Spectrum
+        std::vector<Real> frame, windowedFrame;
+        
+        // Spectrum -> MFCC
+        std::vector<Real> spectrum, mfccCoeffs, mfccBands;
+        
+        // Bands
+        vector<Real> bandsVector;
+        
+        //Spectral Centroid
+        Real spectralCentroid;
+        
+        //MHD descriptors
+        Real pitchReal, pitchConfidence;
+        
+        Real spectralFlatnessReal;
+        
+        vector<Real> moments;
+        
+        Real spread, skewness, kurtosis;
+        
+        Real zcrReal;
+        
+        Real latReal;
+        
+        vector<Real> envelopeSignal;
+        
+        Real tctReal;        
     };
 }
 

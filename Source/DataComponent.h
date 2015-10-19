@@ -296,7 +296,7 @@ private:
     
     void buildDataset(const File& datasetFolder)
     {
-        essentia::Pool featurePool = extractor.extractFeaturesFromFolder(File(datasetFolder.getFullPathName()), true);
+        essentia::Pool featurePool = extractor.extractFeaturesFromFiles(File(datasetFolder.getFullPathName()), true);
         
         updateData(featurePool);
     }

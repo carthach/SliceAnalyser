@@ -18,73 +18,115 @@ namespace Muce {
     
     Extraction::~Extraction()
     {
-        delete network;
+
     }
     
     void Extraction::initAlgorithms()
     {
-        AlgorithmFactory& factory = streaming::AlgorithmFactory::instance();
-        
-        vectorInput = new VectorInput<Real>;
+        AlgorithmFactory& factory = standard::AlgorithmFactory::instance();
         
         //Stastical things
         float halfSampleRate = (float)sampleRate / 2.0;
         
-        onsetRate = AlgorithmFactory::create("OnsetRate");
         
         frameCutter    = factory.create("FrameCutter",
                                         "frameSize", frameSize,
                                         "hopSize", hopSize);
-        
         window     = factory.create("Windowing", "type", "hann");
         
         spec  = factory.create("Spectrum");
         
         mfcc  = factory.create("MFCC");
         
-        vectorInput->output("data") >>  frameCutter->input("signal");
+        centroid = factory.create("Centroid", "range", halfSampleRate);
+        centralMoments = factory.create("CentralMoments", "range", halfSampleRate);
+        distShape = factory.create("DistributionShape");
         
-        // FrameCutter -> Windowing -> Spectrum
-        frameCutter->output("frame")       >>  window->input("frame");
-        window->output("frame")        >>  spec->input("frame");
+        spectralFlatness = factory.create("FlatnessDB");
         
-        // Spectrum -> MFCC -> Pool
-        spec->output("spectrum")  >>  mfcc->input("spectrum");
+        //Energy Bands
+        //    Algorithm* bands = factory.create("ERBBands");
+        bands = factory.create("ERBBands");
         
-        mfcc->output("bands")     >>  NOWHERE;                          // we don't want the mel bands
-        mfcc->output("mfcc")      >>  PC(framePool, "lowlevel.mfcc"); // store only the mfcc coeffs
+        //Global
+        RMS = factory.create("RMS");
+        zcr = factory.create("ZeroCrossingRate");
+        lat = factory.create("LogAttackTime");
+        envelope = factory.create("Envelope");
+        tct = factory.create("TCToTotal");
         
-        onsetVectorInput = new VectorInput<Real>();
-        onsetVectorInput->output("data") >> onsetRate->input("signal");
-        onsetRate->output("onsetTimes") >> PC(onsetPool, "onsetTimes");
-        onsetRate->output("onsetRate") >> NOWHERE;
-        
-//        centroid = factory.create("Centroid", "range", halfSampleRate);
-//        centralMoments = factory.create("CentralMoments", "range", halfSampleRate);
-//        distShape = factory.create("DistributionShape");
-//        
-//        spectralFlatness = factory.create("FlatnessDB");
-//        
-//        //Energy Bands
-//        //    Algorithm* bands = factory.create("ERBBands");
-//        bands = factory.create("ERBBands");
-//        
-//        //Global
-//        RMS = factory.create("RMS");
-//        zcr = factory.create("ZeroCrossingRate");
-//        lat = factory.create("LogAttackTime");
-//        envelope = factory.create("Envelope");
-//        tct = factory.create("TCToTotal");
+        pitch = factory.create("PitchYinFFT");
+
         
         //Yaml Output in JSON format
         //Aggregate Pool stats
         string defaultStats[] = {"mean", "var"};
-        poolAggregator = standard::AlgorithmFactory::create("PoolAggregator", "defaultStats", arrayToVector<string>(defaultStats));
+        poolAggregator = factory.create("PoolAggregator", "defaultStats", arrayToVector<string>(defaultStats));
         
-        yamlOutput  = standard::AlgorithmFactory::create("YamlOutput", "format", "yaml");
+        yamlOutput  = factory.create("YamlOutput", "format", "yaml");
         
-        network = new Network(vectorInput);
-        onsetVectorNetwork = new Network(onsetVectorInput);
+        
+
+        
+        frameCutter->output("frame").set(frame);
+        window->input("frame").set(frame);
+        
+        window->output("frame").set(windowedFrame);
+        spec->input("frame").set(windowedFrame);
+        
+
+        
+        spec->output("spectrum").set(spectrum);
+        mfcc->input("spectrum").set(spectrum);
+        
+        mfcc->output("bands").set(mfccBands);
+        mfcc->output("mfcc").set(mfccCoeffs);
+        
+
+        
+        bands->input("spectrum").set(spectrum);
+        bands->output("bands").set(bandsVector);
+        
+
+        centroid->input("array").set(spectrum);
+        centroid->output("centroid").set(spectralCentroid);
+        
+        pitch->input("spectrum").set(spectrum);
+        pitch->output("pitch").set(pitchReal);
+        pitch->output("pitchConfidence").set(pitchConfidence);
+        pitch->output("pitch").set(pitchReal);
+        
+
+        spectralFlatness->input("array").set(spectrum);
+        spectralFlatness->output("flatnessDB").set(spectralFlatnessReal);
+        
+        //Central Moments
+
+        centralMoments->input("array").set(spectrum);
+        centralMoments->output("centralMoments").set(moments);
+        
+
+        distShape->input("centralMoments").set(moments);
+        distShape->output("spread").set(spread);
+        distShape->output("skewness").set(skewness);
+        distShape->output("kurtosis").set(kurtosis);
+        
+        //Global stats (don't set input until in the loop)
+
+        zcr->output("zeroCrossingRate").set(zcrReal);
+        
+
+        lat->output("logAttackTime").set(latReal);
+        
+
+        envelope->output("signal").set(envelopeSignal);
+        
+
+        tct->input("envelope").set(envelopeSignal);
+        tct->output("TCToTotal").set(tctReal);
+        
+        
+        
     }
     
     vector<Real> Extraction::extractPeakValues(const vector<vector<Real> >& slices)
@@ -103,45 +145,48 @@ namespace Muce {
     
     vector<Real> Extraction::extractOnsetTimes(const vector<Real>& audio)
     {
+        Algorithm* extractoronsetrate = AlgorithmFactory::create("OnsetRate");
         
-        onsetVectorNetwork->reset();
-        onsetVectorInput->setVector(&audio);
-        onsetVectorNetwork->run();
+        Real onsetRate;
+        vector<Real> onsets;
         
-        return onsetPool.value<vector<Real>>("onsetTimes");
+        extractoronsetrate->input("signal").set(audio);
+        extractoronsetrate->output("onsets").set(onsets);
+        //    extractoronsetrate->configure("ratioThreshold", 12.0);
+        //    extractoronsetrate->configure("combine", 100.0);
+        extractoronsetrate->output("onsetRate").set(onsetRate);
+        
+        extractoronsetrate->compute();
+        
+        delete extractoronsetrate;
+        
+        return onsets;
     }
     
     
     
     vector<Real> Extraction::extractRhythmFeatures(const vector<Real>& audio)
     {
-        ScopedPointer<Algorithm> rhythmExtractor = AlgorithmFactory::create("RhythmExtractor2013", "method", "degara");
+        Algorithm* rhythmExtractor = AlgorithmFactory::create("RhythmExtractor2013", "method", "degara");
         
-        Pool pool;
+        Real bpm ,confidence;
+        vector<Real> ticks, estimates, bpmIntervals;
         
-        VectorInput<Real>* v;
-        v = new VectorInput<Real>;
-        v->declareParameters();
+        rhythmExtractor->input("signal").set(audio);
+        rhythmExtractor->output("bpm").set(bpm);
+        rhythmExtractor->output("ticks").set(ticks);
+        rhythmExtractor->output("estimates").set(estimates);
+        rhythmExtractor->output("bpmIntervals").set(bpmIntervals);
+        rhythmExtractor->output("confidence").set(confidence);
         
-        v->setVector(&audio);
-        v->output("data") >> rhythmExtractor->input("signal");
-        rhythmExtractor->output("ticks") >> NOWHERE;
-        rhythmExtractor->output("confidence") >> NOWHERE;
-        rhythmExtractor->output("bpm") >> PC(pool, "bpm");
-        rhythmExtractor->output("estimates") >> NOWHERE;
-        rhythmExtractor->output("bpmIntervals") >> NOWHERE;
+        rhythmExtractor->compute();
         
-        Network n(v);
-        n.run();
+        vector<Real> blah;
+        blah.push_back(bpm);
         
-        std::cout << "rhythmFeatures" << "\n";
+        delete rhythmExtractor;
         
-        vector<Real> features;
-        features.push_back(pool.value<Real>("bpm"));
-        
-        n.clear();
-        
-        return features;
+        return blah;
     }
     
     //vector<Real> Extraction::getGlobalFeatures(const vector<Real>& audio)
@@ -169,6 +214,7 @@ namespace Muce {
     vector<vector<Real> > Extraction::extractOnsets(const vector<Real>& onsetTimes, const vector<Real>& audio)
     {
         vector<vector<Real> > slices;
+        AlgorithmFactory& factory = standard::AlgorithmFactory::instance();
         
         //Fix magic SR
         float audioLength = (float)audio.size() / (float)44100.0;
@@ -178,43 +224,28 @@ namespace Muce {
         vector<Real> endTimes(first, last);
         endTimes.push_back(audioLength);
         
-        Algorithm* slicer = AlgorithmFactory::create("Slicer", "endTimes", endTimes, "startTimes", onsetTimes);
+        Algorithm* slicer = factory.create("Slicer",
+                                           "endTimes", endTimes,
+                                           "startTimes",
+                                           onsetTimes);
         
-        Pool pool;
+        slicer->input("audio").set(audio);
+        slicer->output("frame").set(slices);
+        slicer->compute();
         
-         VectorInput<Real> *v = new VectorInput<Real>();
-        v->setVector(&audio);
-        *v >> slicer->input("audio");
-//        connect(vectorInput->output("data"), slicer->input("signal"));
-        slicer->output("frame") >> PC(pool, "frames");
+        delete slicer;
         
-        Network n(v);
-        n.run();
-        
-
-        
-//        n.clear();
-        
-        
-        
-        vector<vector<Real> > frames;
-//        frames =  pool.value<vector<vector<Real> > >("frames");
-        
-        return frames;
-    }
-    
-    void windowOnsets(vector<vector<Real> >& onsets)
-    {
-        //Window all the slices
-        for(int i=0; i<onsets.size();i++) {
-            std::vector<float> hann = Audio::hannWindow(onsets[i].size());
-            for(int j=0; j<onsets[i].size(); j++) {
+        for(int i=0; i<slices.size();i++) {
+            std::vector<float> hann = Audio::hannWindow(slices[i].size());
+            for(int j=0; j<slices[i].size(); j++) {
                 if(j <= 256)
-                    onsets[i][j] = onsets[i][j] * hann[j];
-                if(j >= (float)onsets[i].size() / 4.0)
-                    onsets[i][j] = onsets[i][j] * hann[j];
+                    slices[i][j] = slices[i][j] * hann[j];
+                if(j >= (float)slices[i].size() / 4.0)
+                    slices[i][j] = slices[i][j] * hann[j];
             }
         }
+        
+        return slices;
     }
     
     inline void Extraction::writeOnsets(const vector<vector<Real> >& slices, const String outputRoot)
@@ -232,7 +263,7 @@ namespace Muce {
         Pool pool;
         
         //We get the overall pool, merge and output
-        standard::Algorithm* yamlInput  = standard::AlgorithmFactory::create("YamlInput", "format", "json");
+        Algorithm* yamlInput  = AlgorithmFactory::create("YamlInput", "format", "json");
         yamlInput->configure("filename", jsonFilename.toStdString());
         yamlInput->output("pool").set(pool);
         yamlInput->compute();
@@ -321,10 +352,10 @@ namespace Muce {
     }
     
 
-    //This batches the files
-    Pool Extraction::extractFeaturesFromFiles(const File& audioFolder, bool writeOnsets)
+    
+    Pool Extraction::extractFeaturesFromFolder(const File& audioFolder, bool writeOnsets)
     {
-        Pool filePool;
+        Pool folderPool;
         
         sliceID = 0;
         
@@ -345,6 +376,7 @@ namespace Muce {
         
         for(int i=0; i<filesToProcess.size(); i++) {
             String currentAudioFileName = filesToProcess[i].getFileName();
+            
             
             int label;
             
@@ -371,7 +403,7 @@ namespace Muce {
             labels.push_back(label);
             
 //            fileNames.appendText(filesToProcess[i].getFileName() + "\n");
-            vector<Real> signal = audioTools.audioFileToVector(filesToProcess[i]);
+            vector<Real> signal = audio.audioFileToVector(filesToProcess[i]);
             //        Real BPM =  getGlobalFeatures(signal)[0];
             
             //        std::cout << BPM << "\n";
@@ -379,12 +411,8 @@ namespace Muce {
             //------Onset Processing
             
             //Slice
-            std::cout << "extractOnsetsTimes" << "\n";
             vector<Real> onsetTimes = extractOnsetTimes(signal);
-//            vector<Real> onsetTimes;
-            std::cout << "extractOnsets" << "\n";
-                vector<vector<Real> > onsetSlices = extractOnsets(onsetTimes, signal);
-//            vector<vector<Real> > onsetSlices;
+            vector<vector<Real> > onsetSlices = extractOnsets(onsetTimes, signal);
             
             //        vector<vector<Real> > onsetSlices;
             onsetSlices.push_back(signal);
@@ -414,20 +442,18 @@ namespace Muce {
             //Add to pool
             Pool onsetPool = extractFeaturesFromOnsets(onsetSlices, 0);
 //
-            filePool.merge(onsetPool, "append");
-            
-            count++;
+            folderPool.merge(onsetPool, "append");
         }
         
         std::cout << "No. of files processed: " << count << "\n";
         
-        filePool.append("labels", labels);
+        folderPool.append("labels", labels);
         
         String jsonFilename = outputRoot + "dataset.json";
         
         //We get the overall pool, merge and output
-        standard::Algorithm* yamlOutput  = standard::AlgorithmFactory::create("YamlOutput", "format", "json", "writeVersion", false);
-        yamlOutput->input("pool").set(filePool);
+        Algorithm* yamlOutput  = standard::AlgorithmFactory::create("YamlOutput", "format", "json", "writeVersion", false);
+        yamlOutput->input("pool").set(folderPool);
         yamlOutput->configure("filename", jsonFilename.toStdString());
         yamlOutput->compute();
         
@@ -441,7 +467,7 @@ namespace Muce {
 //        cv::Mat poolMat = globalPoolToMat();
         
         //    cv::Mat pcaOut = pcaReduce(poolMat, 3);
-        return filePool;
+        return folderPool;
     }
     
     StringArray Extraction::featuresInPool(const Pool& pool)
@@ -462,22 +488,80 @@ namespace Muce {
         return featureList;
     }
     
-    Pool Extraction::extractFeatures(vector<Real>& audio, Real BPM)
+    Pool Extraction::extractFeatures(const vector<Real>& audio, Real BPM)
     {
-        network->reset();
+        Pool framePool, aggrPool;
+        
+        //Reset the framecutter and set to the new input
+        frameCutter->reset();
+        frameCutter->input("signal").set(audio);
+        
+        //Reset the framewise algorithms
+        window->reset();
+        spec->reset();
+        mfcc->reset();
+        centroid->reset();
+        centralMoments->reset();
+        distShape->reset();
+        
+        //Reset MHD descriptors
+        spectralFlatness->reset();
+        pitch->reset();
+        bands->reset();
+        
+        poolAggregator->reset();
+        poolAggregator->input("input").set(framePool);
+        poolAggregator->output("output").set(aggrPool);
         
         framePool.clear();
         
-        vectorInput->setVector(&audio);
-//        network->run();
+        //Start the frame cutter
+        while (true) {
+            
+            // compute a frame
+            frameCutter->compute();
+            
+            // if it was the last one (ie: it was empty), then we're done.
+            if (!frame.size()) {
+                break;
+            }
+            
+            // if the frame is silent, just drop it and go on processing
+            if (isSilent(frame)) continue;
+            
+            //Spectrum and MFCC
+            window->compute();
+            spec->compute();
+            
+            //            //MFCC
+            //            mfcc->compute();
+            //            framePool.add("mfcc",mfccCoeffs);
+            
+            centroid->compute();
+            
+            framePool.add("spectral_centroid", spectralCentroid);
+            
+            bands->compute();
+            framePool.add("bands", bandsVector);
+            
+            centralMoments->compute();
+            distShape->compute();
+            
+            //MHD
+            pitch->compute();
+            framePool.add("pitch", pitchReal);
+            
+            spectralFlatness->compute();
+            framePool.add("flatness", spectralFlatnessReal);
+            
+            //            framePool.add("spectral_spread", spread);
+            //            framePool.add("spectral_skewness", skewness);
+            //            framePool.add("spectral_kurtosis", kurtosis);
+        }
         
-//        network->run();
-        
-        // aggregate the results
-        Pool aggrPool; // the pool with the aggregated MFCC values
-        
-        poolAggregator->input("input").set(framePool);
-        poolAggregator->output("output").set(aggrPool);
+        //Time to aggregate
+        aggrPool.clear();
+        poolAggregator->reset();
         poolAggregator->compute();
         
         //For merging pools together the JSON entries need to be vectorised (using .add function)
@@ -512,9 +596,15 @@ namespace Muce {
         //        aggrPool.add("zcr", zcrReal);
         //        aggrPool.add("lat", latReal);
         //        aggrPool.add("tct", tctReal);
-
         
-//        aggrPool.add("RMS", rmsValue);
+        Real rmsValue;
+        RMS->reset();
+        RMS->input("array").set(audio);
+        RMS->output("rms").set(rmsValue);
+        RMS->compute();
+        
+        aggrPool.add("RMS", rmsValue);
+        
         
         //Get the mean of the erbBands to get lo/mid/hi
         
@@ -526,58 +616,58 @@ namespace Muce {
         Algorithm* mean = AlgorithmFactory::create("Mean");
         
         
-//        //=========== ERB STUFF =========
-//        //Get erbLo
-//        vector<Real>::const_iterator first = aggrBands.begin();
-//        vector<Real>::const_iterator last = aggrBands.begin() + 2;
-//        vector<Real> loBands(first, last);
-//        
-//        Real loValue;
-//        mean->input("array").set(loBands);
-//        mean->output("mean").set(loValue);
-//        mean->compute();
-//        aggrPool.add("loValue", loValue);
-//        
-//        //Get erbMid
-//        first = aggrBands.begin()+2;
-//        last = aggrBands.begin()+5;
-//        vector<Real> midBands(first, last);
-//        
-//        Real midValue;
-//        
-//        mean->reset();
-//        mean->input("array").set(midBands);
-//        mean->output("mean").set(midValue);
-//        mean->compute();
-//        aggrPool.add("midValue", midValue);
-//        
-//        //Get erbHi
-//        first = aggrBands.begin()+5;
-//        //        last = aggrBands.end();
-//        last = aggrBands.begin()+10;
-//        vector<Real> hiBands(first, last);
-//        
-//        Real hiValue;
-//        
-//        mean->reset();
-//        mean->input("array").set(hiBands);
-//        mean->output("mean").set(hiValue);
-//        mean->compute();
-//        aggrPool.add("hiValue", hiValue);
-//        
-//        //Remove the original full erbBand vectors
-//        aggrPool.remove("bands.mean");
-//        aggrPool.remove("bands.var");
+        //=========== ERB STUFF =========
+        //Get erbLo
+        vector<Real>::const_iterator first = aggrBands.begin();
+        vector<Real>::const_iterator last = aggrBands.begin() + 2;
+        vector<Real> loBands(first, last);
         
-        //Remove/Add mfcc vector
-        vector<Real> aggrBandsMean = vectors["mfcc.mean"];
-        vector<Real> aggrBandsVar = vectors["mfcc.var"];
-        aggrPool.remove("mfcc.mean");
-        aggrPool.remove("mfcc.var");
-        aggrPool.add("mfcc.mean", aggrBandsMean);
-        aggrPool.add("mfcc.var", aggrBandsVar);
+        Real loValue;
+        mean->input("array").set(loBands);
+        mean->output("mean").set(loValue);
+        mean->compute();
+        aggrPool.add("loValue", loValue);
         
-//        aggrPool.add("BPM", BPM);
+        //Get erbMid
+        first = aggrBands.begin()+2;
+        last = aggrBands.begin()+5;
+        vector<Real> midBands(first, last);
+        
+        Real midValue;
+        
+        mean->reset();
+        mean->input("array").set(midBands);
+        mean->output("mean").set(midValue);
+        mean->compute();
+        aggrPool.add("midValue", midValue);
+        
+        //Get erbHi
+        first = aggrBands.begin()+5;
+        //        last = aggrBands.end();
+        last = aggrBands.begin()+10;
+        vector<Real> hiBands(first, last);
+        
+        Real hiValue;
+        
+        mean->reset();
+        mean->input("array").set(hiBands);
+        mean->output("mean").set(hiValue);
+        mean->compute();
+        aggrPool.add("hiValue", hiValue);
+        
+        //Remove the original full erbBand vectors
+        aggrPool.remove("bands.mean");
+        aggrPool.remove("bands.var");
+        
+        //        //Remove/Add mfcc vector
+        //        vector<Real> aggrBandsMean = vectors["mfcc.mean"];
+        //        vector<Real> aggrBandsVar = vectors["mfcc.var"];
+        //        aggrPool.remove("mfcc.mean");
+        //        aggrPool.remove("mfcc.var");
+        //        aggrPool.add("mfcc.mean", aggrBandsMean);
+        //        aggrPool.add("mfcc.var", aggrBandsVar);
+        
+        aggrPool.add("BPM", BPM);
         
         //If you want to output individual aggregate pools
         //            if(outputAggrPool) {
@@ -592,10 +682,14 @@ namespace Muce {
         return aggrPool;
     }
     
-    //This batches the onsets
+    //Put your extractor code here
     Pool Extraction::extractFeaturesFromOnsets(vector<vector<Real> >& slices, Real BPM)
     {
-        Pool onsetsPool;
+        
+        //The 3 levels of pools
+        Pool onsetPool;
+        
+
         
         //Loop through all the slices
         vector<vector<Real> >::iterator sliceIterator;
@@ -603,21 +697,21 @@ namespace Muce {
         //Go through every onset and extract the features
         for(sliceIterator = slices.begin(); sliceIterator != slices.end(); sliceIterator++)
         {
-            Pool onsetPool = extractFeatures(*sliceIterator, 0);
-            onsetsPool.merge(onsetPool, "append");
+            Pool onsetFeatures = extractFeatures(*sliceIterator, 0);
+            onsetPool.merge(onsetFeatures, "append");
         }
 
         //Remove unwanted stuff
-        onsetsPool.remove("BPM");
-        onsetsPool.remove("RMS");
-        onsetsPool.remove("flatness.mean");
-        onsetsPool.remove("flatness.var");
-        onsetsPool.remove("pitch.mean");
-        onsetsPool.remove("pitch.var");
-        onsetsPool.remove("spectral_centroid.mean");
-        onsetsPool.remove("spectral_centroid.var");
+        onsetPool.remove("BPM");
+        onsetPool.remove("RMS");
+        onsetPool.remove("flatness.mean");
+        onsetPool.remove("flatness.var");
+        onsetPool.remove("pitch.mean");
+        onsetPool.remove("pitch.var");
+        onsetPool.remove("spectral_centroid.mean");
+        onsetPool.remove("spectral_centroid.var");
         //    std::cout << onsetPool.descriptorNames();
         
-        return onsetsPool;
+        return onsetPool;
     }
 }
