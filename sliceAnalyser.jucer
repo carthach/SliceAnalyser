@@ -2,11 +2,9 @@
 
 <JUCERPROJECT id="B5vL8j" name="sliceAnalyser" projectType="guiapp" version="1.0.0"
               bundleIdentifier="com.yourcompany.sliceAnalyser" includeBinaryInAppConfig="1"
-              jucerVersion="3.2.0">
+              jucerVersion="4.0.1">
   <MAINGROUP id="putndE" name="sliceAnalyser">
     <GROUP id="{20F709EA-5E30-099A-39FE-9F04AD691B2D}" name="Source">
-      <FILE id="a4N1PU" name="MIR.cpp" compile="1" resource="0" file="Source/MIR.cpp"/>
-      <FILE id="bPWgy4" name="MIR.h" compile="0" resource="0" file="Source/MIR.h"/>
       <GROUP id="{C6C9282B-C96F-BBE9-701D-8DDB096469C8}" name="Muce">
         <FILE id="zi3koh" name="Audio.cpp" compile="1" resource="0" file="Source/Audio.cpp"/>
         <FILE id="qdROsD" name="Audio.h" compile="0" resource="0" file="Source/Audio.h"/>
