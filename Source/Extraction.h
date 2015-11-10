@@ -38,7 +38,8 @@ namespace Muce {
         
         Extraction();
         ~Extraction();
-        void initAlgorithms();
+        void initBaseAlgorithms();
+        void setupUserAlgorithms(StringArray algorithms);
         
         int sampleRate = 44100;
         int frameSize = 2048;
@@ -57,22 +58,21 @@ namespace Muce {
         //Load Features
         Pool loadFeatures(const String& jsonFileName);
         
-
+        //Global rhythm Features extractor
         vector<Real> extractRhythmFeatures(const vector<Real>& audio);
-
-        //Extract features for a vector of onsets
         
-        //Build a whole dataset and output a json/yaml file
+        //Our threaded parameters and method
         File threadAudioFolder;
         bool threadWriteOnsets;
         Pool threadFolderPool;
+        void run() override;
         
+        //The three possible levels of feature extraction, each returning pools
         Pool extractFeaturesFromFolder(const File& audioFolder, bool writeOnsets);
         Pool extractFeaturesFromOnsets(vector<vector<Real> >& slices, Real BPM);
         Pool extractFeatures(const vector<Real>& audio, Real BPM);
         
-        
-        //Music Hack Day
+        //Music Hack Day functions for writing loops
         void writeLoop(float onsetTime, const vector<Real>& audio, float BPM, String outFileName);
         vector<Real> randomLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
         vector<Real> firstLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename);
@@ -81,28 +81,15 @@ namespace Muce {
         
         Tools tools;
         
-        bool threaded = true;
-        void run() override;
-        
+        StringArray availableAlgorithms = {"MFCC", "Centroid", "Flatness", "Bands", "Pitch",
+            "RMS", "ZeroCrossingRate", "LogAttackTime", "Envelope", "TcToTotal"};
+        std::map<string, bool> selectedAlgorithms;
     private:
         //Spectral
-        ScopedPointer<Algorithm> frameCutter, window, spec, mfcc;
+        ScopedPointer<Algorithm> frameCutter, window, spec;
+        std::map<string, ScopedPointer<Algorithm>> algorithms;
         
-        ScopedPointer<Algorithm> centroid;
-        
-        ScopedPointer<Algorithm> spectralFlatness;
-
-        //Central Moments
-        ScopedPointer<Algorithm> centralMoments, distShape;
-        
-        ScopedPointer<Algorithm> bands;
-        
-        //Global
-        ScopedPointer<Algorithm> RMS, zcr, lat, envelope, tct;
-        
-        ScopedPointer<Algorithm> yamlOutput, poolAggregator;
-        
-        ScopedPointer<Algorithm> pitch;
+        ScopedPointer<Algorithm> yamlOutput, poolAggregator;        
         
         // FrameCutter -> Windowing -> Spectrum
         std::vector<Real> frame, windowedFrame;
@@ -125,13 +112,11 @@ namespace Muce {
         
         Real spread, skewness, kurtosis;
         
-        Real zcrReal;
-        
-        Real latReal;
-        
+        Real rmsReal;
+        Real zeroCrossingRateReal;
+        Real logAttackTimeReal;
         vector<Real> envelopeSignal;
-        
-        Real tctReal;        
+        Real tCToTotalReal;
     };
 }
 

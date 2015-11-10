@@ -100,6 +100,8 @@ namespace Muce {
         }
     }
     
+    
+    //THIS IS A MESS
     cv::Mat Tools::poolToMat(const essentia::Pool& pool)
     {
         using namespace cv;
@@ -118,7 +120,9 @@ namespace Muce {
         RealMapIter realIterator = realFeatures.begin();
         int noOfInstances = realIterator->second.size();
         
-        Mat realFeaturesMatrix(noOfInstances, noOfFeatures, DataType<float>::type);
+        Mat realFeaturesMatrix;
+        if(noOfFeatures)
+            realFeaturesMatrix = Mat(noOfInstances, noOfFeatures, DataType<float>::type);
         
         int i=0;
         for(; realIterator != realFeatures.end(); realIterator++) {
@@ -136,11 +140,14 @@ namespace Muce {
         VectorMapIter vectorIterator;
         int noOfVectorFeatures = 0;
         
+        
         //noOfVectorFeatures = the sum of the dimensions of each feature
         for(vectorIterator = vectorFeatures.begin(); vectorIterator != vectorFeatures.end(); vectorIterator++) {
             if(!vectorIterator->second.empty()) {
                 noOfVectorFeatures += vectorIterator->second[0].size(); //Get the dimensionality from the first instance
-                jassert(noOfInstances == vectorIterator->second.size()); //The number of instances should agree with the Reals
+                
+                if(realFeatures.size())
+                    jassert(noOfInstances == vectorIterator->second.size()); //The number of instances should agree with the Reals
             }
         }
         

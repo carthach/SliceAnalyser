@@ -13,55 +13,24 @@
 namespace Muce {        
     Extraction::Extraction() : ThreadWithProgressWindow ("Building Dataset...", true, true)
     {
-        initAlgorithms();
+        initBaseAlgorithms();
     }
     
     Extraction::~Extraction()
     {
     }
     
-    void Extraction::initAlgorithms()
+    void Extraction::initBaseAlgorithms()
     {
         AlgorithmFactory& factory = standard::AlgorithmFactory::instance();
-        
-        //Stastical things
-        float halfSampleRate = (float)sampleRate / 2.0;
+
         
         
         frameCutter    = factory.create("FrameCutter",
                                         "frameSize", frameSize,
                                         "hopSize", hopSize);
         window     = factory.create("Windowing", "type", "hann");
-        
         spec  = factory.create("Spectrum");
-        
-        mfcc  = factory.create("MFCC");
-        
-        centroid = factory.create("Centroid", "range", halfSampleRate);
-        centralMoments = factory.create("CentralMoments", "range", halfSampleRate);
-        distShape = factory.create("DistributionShape");
-        
-        spectralFlatness = factory.create("FlatnessDB");
-        
-        //Energy Bands
-        //    Algorithm* bands = factory.create("ERBBands");
-        bands = factory.create("ERBBands");
-        
-        //Global
-        RMS = factory.create("RMS");
-        zcr = factory.create("ZeroCrossingRate");
-        lat = factory.create("LogAttackTime");
-        envelope = factory.create("Envelope");
-        tct = factory.create("TCToTotal");
-        
-        pitch = factory.create("PitchYinFFT");
-
-        //Yaml Output in JSON format
-        //Aggregate Pool stats
-        string defaultStats[] = {"mean", "var"};
-        poolAggregator = factory.create("PoolAggregator", "defaultStats", arrayToVector<string>(defaultStats));
-        
-        yamlOutput  = factory.create("YamlOutput", "format", "yaml");
         
         frameCutter->output("frame").set(frame);
         window->input("frame").set(frame);
@@ -70,49 +39,90 @@ namespace Muce {
         spec->input("frame").set(windowedFrame);
         
         spec->output("spectrum").set(spectrum);
-        mfcc->input("spectrum").set(spectrum);
+    
         
-        mfcc->output("bands").set(mfccBands);
-        mfcc->output("mfcc").set(mfccCoeffs);
+        //Yaml Output in JSON format
+        //Aggregate Pool stats
+        string defaultStats[] = {"mean", "var"};
+        poolAggregator = factory.create("PoolAggregator", "defaultStats", arrayToVector<string>(defaultStats));
         
-        bands->input("spectrum").set(spectrum);
-        bands->output("bands").set(bandsVector);
-        
-        centroid->input("array").set(spectrum);
-        centroid->output("centroid").set(spectralCentroid);
-        
-        pitch->input("spectrum").set(spectrum);
-        pitch->output("pitch").set(pitchReal);
-        pitch->output("pitchConfidence").set(pitchConfidence);
-        pitch->output("pitch").set(pitchReal);
-        
-        spectralFlatness->input("array").set(spectrum);
-        spectralFlatness->output("flatnessDB").set(spectralFlatnessReal);
-        
-        //Central Moments
-        centralMoments->input("array").set(spectrum);
-        centralMoments->output("centralMoments").set(moments);
-        
-        distShape->input("centralMoments").set(moments);
-        distShape->output("spread").set(spread);
-        distShape->output("skewness").set(skewness);
-        distShape->output("kurtosis").set(kurtosis);
-        
-        //Global stats (don't set input until in the loop)
-
-        zcr->output("zeroCrossingRate").set(zcrReal);
-        
-        lat->output("logAttackTime").set(latReal);
-        
-        envelope->output("signal").set(envelopeSignal);
-        
-        tct->input("envelope").set(envelopeSignal);
-        tct->output("TCToTotal").set(tctReal);
-        
-        
-        
+        yamlOutput  = factory.create("YamlOutput", "format", "yaml");
     }
     
+    
+    void Extraction::setupUserAlgorithms(StringArray algorithmChoices)
+    {
+        selectedAlgorithms.clear();
+        for(int i=0; i<algorithmChoices.size(); i++)
+            selectedAlgorithms[algorithmChoices[i].toStdString()] = true;
+        
+        AlgorithmFactory& factory = standard::AlgorithmFactory::instance();
+        
+        
+        //Stastical things
+        float halfSampleRate = (float)sampleRate / 2.0;
+        
+        if(selectedAlgorithms["MFCC"]) {
+            algorithms["MFCC"] = factory.create("MFCC");
+            algorithms["MFCC"]->input("spectrum").set(spectrum);
+            algorithms["MFCC"]->output("bands").set(mfccBands);
+            algorithms["MFCC"]->output("mfcc").set(mfccCoeffs);
+        }
+        
+        if(selectedAlgorithms["Centroid"]) {
+            algorithms["Centroid"] = factory.create("Centroid", "range", halfSampleRate);
+            algorithms["Centroid"]->input("array").set(spectrum);
+            algorithms["Centroid"]->output("centroid").set(spectralCentroid);
+        }
+        
+        if(selectedAlgorithms["Flatness"]) {
+            algorithms["Flatness"] = factory.create("FlatnessDB");
+            algorithms["Flatness"]->input("array").set(spectrum);
+            algorithms["Flatness"]->output("flatnessDB").set(spectralFlatnessReal);
+        }
+        
+        if(selectedAlgorithms["Bands"]) {
+            algorithms["Bands"] = factory.create("ERBBands");
+            algorithms["Bands"]->input("spectrum").set(spectrum);
+            algorithms["Bands"]->output("bands").set(bandsVector);
+        }
+        
+        if(selectedAlgorithms["Pitch"]) {
+            algorithms["Pitch"] = factory.create("PitchYinFFT");
+            algorithms["Pitch"]->input("spectrum").set(spectrum);
+            algorithms["Pitch"]->output("pitch").set(pitchReal);
+            algorithms["Pitch"]->output("pitchConfidence").set(pitchConfidence);
+            algorithms["Pitch"]->output("pitch").set(pitchReal);
+        }
+        
+        //Global
+        if(selectedAlgorithms["RMS"]) {
+            algorithms["RMS"] = factory.create("RMS");
+            algorithms["RMS"]->output("rms").set(rmsReal);
+        }
+        
+        if(selectedAlgorithms["ZeroCrossingRate"]) {
+            algorithms["ZeroCrossingRate"] = factory.create("ZeroCrossingRate");
+            algorithms["ZeroCrossingRate"]->output("ZeroCrossingRate").set(zeroCrossingRateReal);
+        }
+        
+        if(selectedAlgorithms["LogAttackTime"]) {
+            algorithms["LogAttackTime"] = factory.create("LogAttackTime");
+            algorithms["LogAttackTime"]->output("logAttackTime").set(logAttackTimeReal);
+        }
+        
+        if(selectedAlgorithms["Envelope"])
+        {
+            algorithms["Envelope"] = factory.create("Envelope");
+            algorithms["Envelope"]->output("signal").set(envelopeSignal);
+        }
+        
+        if(algorithms.count("Envelope") && selectedAlgorithms["TcToTotal"]) {
+            algorithms["TcToTotal"] = factory.create("TCToTotal");
+            algorithms["TcToTotal"]->input("envelope").set(envelopeSignal);
+            algorithms["TcToTotal"]->output("TCToTotal").set(tCToTotalReal);
+        }
+    }
     
     
     vector<Real> Extraction::extractPeakValues(const vector<vector<Real> >& slices)
@@ -438,7 +448,8 @@ namespace Muce {
         
         std::cout << "No. of files processed: " << count << "\n";
         
-        threadFolderPool.append("labels", labels);
+        
+//        threadFolderPool.append("labels", labels);
         
         String jsonFilename = outputRoot + "dataset.json";
         
@@ -498,15 +509,9 @@ namespace Muce {
         //Reset the framewise algorithms
         window->reset();
         spec->reset();
-        mfcc->reset();
-        centroid->reset();
-        centralMoments->reset();
-        distShape->reset();
         
-        //Reset MHD descriptors
-        spectralFlatness->reset();
-        pitch->reset();
-        bands->reset();
+        for(auto & algorithm : algorithms)
+            algorithm.second->reset();
         
         poolAggregator->reset();
         poolAggregator->input("input").set(framePool);
@@ -532,26 +537,30 @@ namespace Muce {
             window->compute();
             spec->compute();
             
-            //            //MFCC
-            //            mfcc->compute();
-            //            framePool.add("mfcc",mfccCoeffs);
+            if(algorithms.count("MFCC")) {
+                algorithms["MFCC"]->compute();
+                framePool.add("mfcc",mfccCoeffs);
+            }
+
+            if(algorithms.count("Centroid")) {
+                algorithms["Centroid"]->compute();
+                framePool.add("centroid", spectralCentroid);
+            }
             
-            centroid->compute();
+            if(algorithms.count("Flatness")) {
+                algorithms["Flatness"]->compute();
+                framePool.add("flatness", spectralCentroid);
+            }
             
-            framePool.add("spectral_centroid", spectralCentroid);
+            if(algorithms.count("Bands")) {
+                algorithms["Bands"]->compute();
+                framePool.add("bands", spectralCentroid);
+            }
             
-            bands->compute();
-            framePool.add("bands", bandsVector);
-            
-            centralMoments->compute();
-            distShape->compute();
-            
-            //MHD
-            pitch->compute();
-            framePool.add("pitch", pitchReal);
-            
-            spectralFlatness->compute();
-            framePool.add("flatness", spectralFlatnessReal);
+            if(algorithms.count("Pitch")) {
+                algorithms["Pitch"]->compute();
+                framePool.add("pitch", pitchReal);
+            }
             
             //            framePool.add("spectral_spread", spread);
             //            framePool.add("spectral_skewness", skewness);
@@ -575,96 +584,106 @@ namespace Muce {
             aggrPool.add(iterator->first, iterator->second);
         }
         
+        if(algorithms.count("Bands")) {
+            algorithms["Bands"]->compute();
+            framePool.add("bands", bandsVector);
+            
+            if(aggrPool.contains<vector<Real> >("bands.mean")) {
+                vector<Real> aggrBands = aggrPool.value<vector<Real> >("bands.mean");
+                
+                Algorithm* mean = AlgorithmFactory::create("Mean");
+                
+                //=========== ERB STUFF =========
+                //Get erbLo
+                vector<Real>::const_iterator first = aggrBands.begin();
+                vector<Real>::const_iterator last = aggrBands.begin() + 2;
+                vector<Real> loBands(first, last);
+                
+                Real loValue;
+                mean->input("array").set(loBands);
+                mean->output("mean").set(loValue);
+                mean->compute();
+                aggrPool.add("loValue", loValue);
+                
+                //Get erbMid
+                first = aggrBands.begin()+2;
+                last = aggrBands.begin()+5;
+                vector<Real> midBands(first, last);
+                
+                Real midValue;
+                
+                mean->reset();
+                mean->input("array").set(midBands);
+                mean->output("mean").set(midValue);
+                mean->compute();
+                aggrPool.add("midValue", midValue);
+                
+                //Get erbHi
+                first = aggrBands.begin()+5;
+                //        last = aggrBands.end();
+                last = aggrBands.begin()+10;
+                vector<Real> hiBands(first, last);
+                
+                Real hiValue;
+                
+                mean->reset();
+                mean->input("array").set(hiBands);
+                mean->output("mean").set(hiValue);
+                mean->compute();
+                aggrPool.add("hiValue", hiValue);
+                
+                //Remove the original full erbBand vectors
+                aggrPool.remove("bands.mean");
+                aggrPool.remove("bands.var");
+            }
+        }
+    
+        if(algorithms.count("MFCC")) {
+                //Remove/Add mfcc vector
+                vector<Real> mfccMean = aggrPool.value<vector<Real> >("mfcc.mean");
+                vector<Real> mfccVar = aggrPool.value<vector<Real> >("mfcc.var");
+                aggrPool.remove("mfcc.mean");
+                aggrPool.remove("mfcc.var");
+                aggrPool.add("mfcc.mean", mfccMean);
+                aggrPool.add("mfcc.var", mfccVar);
+        }
         
-        //        //Compute and add the global features
-        //        zcr->reset();
-        //        zcr->input("signal").set(*sliceIterator);
-        //        zcr->compute();
-        //
-        //        lat->reset();
-        //        lat->input("signal").set(*sliceIterator);
-        //        lat->compute();
-        //
-        //        envelope->reset();
-        //        envelope->input("signal").set(*sliceIterator);
-        //        envelope->compute();
-        //
-        //        tct->reset();
-        //        tct->compute();
-        //
-        //        aggrPool.add("zcr", zcrReal);
-        //        aggrPool.add("lat", latReal);
-        //        aggrPool.add("tct", tctReal);
+        if(algorithms.count("RMS")){
+            algorithms["RMS"]->reset();
+            algorithms["RMS"]->input("array").set(audio);
+            algorithms["RMS"]->compute();
+            aggrPool.add("RMS", rmsReal);
+        }
         
-        Real rmsValue;
-        RMS->reset();
-        RMS->input("array").set(audio);
-        RMS->output("rms").set(rmsValue);
-        RMS->compute();
+        if(algorithms.count("RMS")) {
+            
+        }
+        if(algorithms.count("ZeroCrossingRate")) {
+            algorithms["ZeroCrossingRate"]->reset();
+            algorithms["ZeroCrossingRate"]->input("signal").set(audio);
+            algorithms["ZeroCrossingRate"]->compute();
+            aggrPool.add("ZeroCrossingRate", zeroCrossingRateReal);
+        }
         
-        aggrPool.add("RMS", rmsValue);
+        if(algorithms.count("LogAttackTime")) {
+            algorithms["LogAttackTime"]->reset();
+            algorithms["LogAttackTime"]->input("signal").set(audio);
+            algorithms["LogAttackTime"]->compute();
+            aggrPool.add("LogAttackTime", logAttackTimeReal);
+        }
         
+        if(algorithms.count("Envelope")) {
+            algorithms["Envelope"]->reset();
+            algorithms["Envelope"]->input("signal").set(audio);
+            algorithms["Envelope"]->compute();
+            aggrPool.add("Envelope", envelopeSignal);
+        }
         
-        //Get the mean of the erbBands to get lo/mid/hi
-        
-        std::map< std::string, std::vector<Real > >  vectors = aggrPool.getRealPool();
-        
-        vector<Real> aggrBands = vectors["bands.mean"];
-
-        
-        Algorithm* mean = AlgorithmFactory::create("Mean");
-        
-        
-        //=========== ERB STUFF =========
-        //Get erbLo
-        vector<Real>::const_iterator first = aggrBands.begin();
-        vector<Real>::const_iterator last = aggrBands.begin() + 2;
-        vector<Real> loBands(first, last);
-        
-        Real loValue;
-        mean->input("array").set(loBands);
-        mean->output("mean").set(loValue);
-        mean->compute();
-        aggrPool.add("loValue", loValue);
-        
-        //Get erbMid
-        first = aggrBands.begin()+2;
-        last = aggrBands.begin()+5;
-        vector<Real> midBands(first, last);
-        
-        Real midValue;
-        
-        mean->reset();
-        mean->input("array").set(midBands);
-        mean->output("mean").set(midValue);
-        mean->compute();
-        aggrPool.add("midValue", midValue);
-        
-        //Get erbHi
-        first = aggrBands.begin()+5;
-        //        last = aggrBands.end();
-        last = aggrBands.begin()+10;
-        vector<Real> hiBands(first, last);
-        
-        Real hiValue;
-        
-        mean->reset();
-        mean->input("array").set(hiBands);
-        mean->output("mean").set(hiValue);
-        mean->compute();
-        aggrPool.add("hiValue", hiValue);
-        
-        //Remove the original full erbBand vectors
-        aggrPool.remove("bands.mean");
-        aggrPool.remove("bands.var");
-        
-        //        //Remove/Add mfcc vector
-        //        vector<Real> aggrBandsMean = vectors["mfcc.mean"];
-        //        vector<Real> aggrBandsVar = vectors["mfcc.var"];
-        //        aggrPool.remove("mfcc.mean");
-        //        aggrPool.remove("mfcc.var");
-        //        aggrPool.add("mfcc.mean", aggrBandsMean);
-        //        aggrPool.add("mfcc.var", aggrBandsVar);
+        if(algorithms.count("TCToTotal")) {
+            algorithms["TcToTotal"]->reset();
+            algorithms["TcToTotal"]->compute();
+            aggrPool.add("TCToToal", tCToTotalReal);
+        }
         
         aggrPool.add("BPM", BPM);
         

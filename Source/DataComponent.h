@@ -108,12 +108,19 @@ public:
         outputLoopButton.addListener(this);
         outputLoopButton.setColour (TextButton::buttonColourId, Colour (0xff79ed7f));
         
+
         sourceListBox.setModel(&sourceModel);
         sourceListBox.setMultipleSelectionEnabled (true);        
         addAndMakeVisible (sourceListBox);
+        sourceModel.data = extractor.availableAlgorithms;
+        for(int i=0; i<extractor.availableAlgorithms.size() ;i++)
+            sourceModel.visibleData.add(i);
+        sourceListBox.updateContent();
+
         
         destinationListBox.setModel(&destinationModel);
         destinationListBox.setMultipleSelectionEnabled (true);
+        destinationModel.data = extractor.availableAlgorithms;
         addAndMakeVisible (destinationListBox);
         
         //Buttons
@@ -149,8 +156,7 @@ public:
             String lastDatasetFile = datasetFolder.getFullPathName() + "/dataset/dataset.json";
         
             if(File(lastDatasetFile).existsAsFile()) {
-                loadDataset(lastDatasetFile);
-                
+//                loadDataset(lastDatasetFile);
             }
         }
         
@@ -162,8 +168,6 @@ public:
         datasetFolderTextBox.setText(datasetFolder.getFullPathName());
         
         addAndMakeVisible(tableComponent);
-        
-
     }
     
     void resized () override
@@ -298,7 +302,10 @@ private:
     
     void buildDataset(const File& datasetFolder)
     {
-        essentia::Pool featurePool = extractor.extractFeaturesFromFolder(File(datasetFolder.getFullPathName()), true);
+        
+        StringArray selectedFeatures = {"MFCC", "RMS"};
+        extractor.setupUserAlgorithms(selectedFeatures);
+        essentia::Pool featurePool = extractor.extractFeaturesFromFolder(File(datasetFolder.getFullPathName()), false);
         
         updateData(featurePool);
     }
