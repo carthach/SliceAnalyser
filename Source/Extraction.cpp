@@ -10,15 +10,14 @@
 
 #include "Extraction.h"
 
-namespace Muce {
-    Extraction::Extraction()
+namespace Muce {        
+    Extraction::Extraction() : ThreadWithProgressWindow ("Building Dataset...", true, true)
     {
         initAlgorithms();
     }
     
     Extraction::~Extraction()
     {
-
     }
     
     void Extraction::initAlgorithms()
@@ -57,7 +56,6 @@ namespace Muce {
         
         pitch = factory.create("PitchYinFFT");
 
-        
         //Yaml Output in JSON format
         //Aggregate Pool stats
         string defaultStats[] = {"mean", "var"};
@@ -65,16 +63,11 @@ namespace Muce {
         
         yamlOutput  = factory.create("YamlOutput", "format", "yaml");
         
-        
-
-        
         frameCutter->output("frame").set(frame);
         window->input("frame").set(frame);
         
         window->output("frame").set(windowedFrame);
         spec->input("frame").set(windowedFrame);
-        
-
         
         spec->output("spectrum").set(spectrum);
         mfcc->input("spectrum").set(spectrum);
@@ -82,12 +75,9 @@ namespace Muce {
         mfcc->output("bands").set(mfccBands);
         mfcc->output("mfcc").set(mfccCoeffs);
         
-
-        
         bands->input("spectrum").set(spectrum);
         bands->output("bands").set(bandsVector);
         
-
         centroid->input("array").set(spectrum);
         centroid->output("centroid").set(spectralCentroid);
         
@@ -96,16 +86,13 @@ namespace Muce {
         pitch->output("pitchConfidence").set(pitchConfidence);
         pitch->output("pitch").set(pitchReal);
         
-
         spectralFlatness->input("array").set(spectrum);
         spectralFlatness->output("flatnessDB").set(spectralFlatnessReal);
         
         //Central Moments
-
         centralMoments->input("array").set(spectrum);
         centralMoments->output("centralMoments").set(moments);
         
-
         distShape->input("centralMoments").set(moments);
         distShape->output("spread").set(spread);
         distShape->output("skewness").set(skewness);
@@ -115,19 +102,18 @@ namespace Muce {
 
         zcr->output("zeroCrossingRate").set(zcrReal);
         
-
         lat->output("logAttackTime").set(latReal);
         
-
         envelope->output("signal").set(envelopeSignal);
         
-
         tct->input("envelope").set(envelopeSignal);
         tct->output("TCToTotal").set(tctReal);
         
         
         
     }
+    
+    
     
     vector<Real> Extraction::extractPeakValues(const vector<vector<Real> >& slices)
     {
@@ -236,7 +222,7 @@ namespace Muce {
         delete slicer;
         
         for(int i=0; i<slices.size();i++) {
-            std::vector<float> hann = Audio::hannWindow(slices[i].size());
+            std::vector<float> hann = Tools::hannWindow(slices[i].size());
             for(int j=0; j<slices[i].size(); j++) {
                 if(j <= 256)
                     slices[i][j] = slices[i][j] * hann[j];
@@ -254,7 +240,7 @@ namespace Muce {
         for(int i=0; i<slices.size(); i++)
         {
             String fileName = outputRoot + "slice_" + std::to_string(sliceID++) + ".wav";
-            Audio::vectorToAudioFile(slices[i], fileName);
+            Tools::vectorToAudioFile(slices[i], fileName);
         }
     }
     
@@ -294,7 +280,7 @@ namespace Muce {
         
         vector<Real> newVec(first, last);
         
-        Audio::vectorToAudioFile(newVec, outFileName);
+        Tools::vectorToAudioFile(newVec, outFileName);
     }
     
     vector<Real> Extraction::firstLoop(const vector<Real>& onsetTimes, const vector<Real>& audio, Real BPM, String outFilename)
@@ -318,7 +304,7 @@ namespace Muce {
             
             newVec = vector<Real>(first, last);
             
-            Audio::vectorToAudioFile(newVec, outFilename);
+            Tools::vectorToAudioFile(newVec, outFilename);
         }
         
         return newVec;
@@ -346,26 +332,23 @@ namespace Muce {
         
         newVec = vector<Real>(first, last);
         
-        Audio::vectorToAudioFile(newVec, outFilename);
+        Tools::vectorToAudioFile(newVec, outFilename);
         
         return newVec;
     }
     
-
-    
-    Pool Extraction::extractFeaturesFromFolder(const File& audioFolder, bool writeOnsets)
+    void Extraction::run()
     {
-        Pool folderPool;
-        
+        threadFolderPool.clear();
         sliceID = 0;
         
-        Array<File> filesToProcess = Audio::getAudioFiles(audioFolder);
+        Array<File> filesToProcess = Tools::getAudioFiles(threadAudioFolder);
         
-        String outputRoot = audioFolder.getFullPathName() + "/dataset/";
+        String outputRoot = threadAudioFolder.getFullPathName() + "/dataset/";
         File datasetDirectory(outputRoot);
         
         datasetDirectory.createDirectory();
-    
+        
         File fileNames(outputRoot + "filesProcessed.txt");
         
         vector<Real> labels;
@@ -375,35 +358,41 @@ namespace Muce {
         File filesProcessedFile("/Users/carthach/Desktop/files_juce\n.txt");
         
         for(int i=0; i<filesToProcess.size(); i++) {
+            
+            // must check this as often as possible, because this is
+            // how we know if the user's pressed 'cancel'
+            if (threadShouldExit())
+                break;
+            
             String currentAudioFileName = filesToProcess[i].getFileName();
             
             
             int label;
             
-//            if(currentAudioFileName.startsWith("LO_")) {
-//                label = 0;
-//                count++;
-//            }
-//            else if(currentAudioFileName.startsWith("MID_")) {
-//                label = 1;
-//                count++;
-//            }
-//            else if(currentAudioFileName.startsWith("HI_")) {
-//                label = 2;
-//                count++;
-//            }
-//            else {
-//                continue;
-//            }
+            //            if(currentAudioFileName.startsWith("LO_")) {
+            //                label = 0;
+            //                count++;
+            //            }
+            //            else if(currentAudioFileName.startsWith("MID_")) {
+            //                label = 1;
+            //                count++;
+            //            }
+            //            else if(currentAudioFileName.startsWith("HI_")) {
+            //                label = 2;
+            //                count++;
+            //            }
+            //            else {
+            //                continue;
+            //            }
             
             std::cout << "Processing file: " << currentAudioFileName << "\n";
             
-//            filesProcessedFile.appendText(currentAudioFileName + "\n");
+            //            filesProcessedFile.appendText(currentAudioFileName + "\n");
             
             labels.push_back(label);
             
-//            fileNames.appendText(filesToProcess[i].getFileName() + "\n");
-            vector<Real> signal = audio.audioFileToVector(filesToProcess[i]);
+            //            fileNames.appendText(filesToProcess[i].getFileName() + "\n");
+            vector<Real> signal = tools.audioFileToVector(filesToProcess[i]);
             //        Real BPM =  getGlobalFeatures(signal)[0];
             
             //        std::cout << BPM << "\n";
@@ -436,24 +425,26 @@ namespace Muce {
             
             
             //Write
-            if(writeOnsets)
+            if(threadWriteOnsets)
                 this->writeOnsets(onsetSlices, outputRoot);
             
             //Add to pool
             Pool onsetPool = extractFeaturesFromOnsets(onsetSlices, 0);
-//
-            folderPool.merge(onsetPool, "append");
+            //
+            threadFolderPool.merge(onsetPool, "append");
+            
+            setProgress (i / (double) filesToProcess.size());
         }
         
         std::cout << "No. of files processed: " << count << "\n";
         
-        folderPool.append("labels", labels);
+        threadFolderPool.append("labels", labels);
         
         String jsonFilename = outputRoot + "dataset.json";
         
         //We get the overall pool, merge and output
         Algorithm* yamlOutput  = standard::AlgorithmFactory::create("YamlOutput", "format", "json", "writeVersion", false);
-        yamlOutput->input("pool").set(folderPool);
+        yamlOutput->input("pool").set(threadFolderPool);
         yamlOutput->configure("filename", jsonFilename.toStdString());
         yamlOutput->compute();
         
@@ -464,10 +455,18 @@ namespace Muce {
         
         //    cv::Mat erbHi = poolToMat(pool);      
         
-//        cv::Mat poolMat = globalPoolToMat();
+        //        cv::Mat poolMat = globalPoolToMat();
         
         //    cv::Mat pcaOut = pcaReduce(poolMat, 3);
-        return folderPool;
+    }
+    
+    Pool Extraction::extractFeaturesFromFolder(const File& audioFolder, bool writeOnsets)
+    {
+        threadAudioFolder = audioFolder;
+        threadWriteOnsets = writeOnsets;
+        
+        runThread();
+        return threadFolderPool;
     }
     
     StringArray Extraction::featuresInPool(const Pool& pool)

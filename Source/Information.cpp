@@ -22,85 +22,20 @@ namespace Muce {
     }
     
     
-    cv::Mat Information::knnTrain(essentia::Pool pool)
-    {
-        //Train Classifier
-        if (pool.contains<std::vector<essentia::Real> >("labels")) {
-            std::vector<essentia::Real> labelsVector = pool.value<std::vector<essentia::Real> >("labels");
-            pool.remove("labels");
-            
-            cv::Mat features = poolToMat(pool);
-            cv::Mat labels(labelsVector, true);
-            
-            knn.train(features, labels);
-        }        
-    }
-    
-    cv::Mat Information::poolToMat(const essentia::Pool& pool)
-    {
-        using namespace cv;
+//    cv::Mat Information::knnTrain(essentia::Pool pool)
+//    {
+//        //Train Classifier
+//        if (pool.contains<std::vector<essentia::Real> >("labels")) {
+//            std::vector<essentia::Real> labelsVector = pool.value<std::vector<essentia::Real> >("labels");
+//            pool.remove("labels");
+//            
+//            cv::Mat features = poolToMat(pool);
+//            cv::Mat labels(labelsVector, true);
+//            
+//            knn.train(features, labels);
+//        }        
+//    }
         
-        std::map<std::string, std::vector<essentia::Real> > realFeatures = pool.getRealPool();
-        std::map<std::string, std::vector< std::vector<essentia::Real> > > vectorFeatures = pool.getVectorRealPool();
-        
-        cv::Mat mat;
-        
-        //No features return empty mat
-        if(realFeatures.empty() && vectorFeatures.empty())
-            return mat;
-        
-        //Do real Features first
-        int noOfFeatures = realFeatures.size();
-        RealMapIter realIterator = realFeatures.begin();
-        int noOfInstances = realIterator->second.size();
-        
-        Mat realFeaturesMatrix(noOfInstances, noOfFeatures, DataType<float>::type);
-        
-        int i=0;
-        for(; realIterator != realFeatures.end(); realIterator++) {
-            for(int j=0; j<realIterator->second.size(); j++)
-                realFeaturesMatrix.at<float>(j,i) = realIterator->second[j];
-            i++;
-        }
-        
-        //If there are no vectorFeatures we are done
-        if(vectorFeatures.empty())
-            return realFeaturesMatrix;
-        
-        //Vector Features
-        
-        VectorMapIter vectorIterator;
-        int noOfVectorFeatures = 0;
-        
-        //noOfVectorFeatures = the sum of the dimensions of each feature
-        for(vectorIterator = vectorFeatures.begin(); vectorIterator != vectorFeatures.end(); vectorIterator++) {
-            if(!vectorIterator->second.empty()) {
-                noOfVectorFeatures += vectorIterator->second[0].size(); //Get the dimensionality from the first instance
-                jassert(noOfInstances == vectorIterator->second.size()); //The number of instances should agree with the Reals
-            }
-        }
-        
-        Mat vectorFeaturesMatrix(noOfInstances, noOfVectorFeatures, DataType<float>::type);
-        
-        //Instances
-        for(int i=0; i<noOfInstances;i++) {
-            //Vector
-            int rowCounter = 0;
-            for(vectorIterator = vectorFeatures.begin(); vectorIterator != vectorFeatures.end(); vectorIterator++) {
-                for(int j=0; j<vectorIterator->second[i].size(); j++) {
-                    vectorFeaturesMatrix.at<float>(i,rowCounter) = vectorIterator->second[i][j];
-                    rowCounter++;
-                }
-                
-            }
-        }
-        
-        //Concatenate
-        hconcat(realFeaturesMatrix, vectorFeaturesMatrix, mat);
-        
-        return mat;
-    }
-    
     cv::Mat Information::kMeans(cv::Mat points, int k)
     {
         using namespace cv;
@@ -141,11 +76,6 @@ namespace Muce {
         for(int i=0; i <mat.cols; i++) {
             cv::normalize(mat.col(i), mat.col(i), 0, 1, cv::NORM_MINMAX, CV_32F);
         }
-    }
-    
-    cv::Mat Information::globalPoolToMat()
-    {
-//        return poolToMat(globalOnsetPool);
     }
     
     void Information::readYamlToMatrix(const String& yamlFilename, const StringArray& featureList)

@@ -8,30 +8,43 @@
   ==============================================================================
 */
 
-#ifndef AUDIO_H_INCLUDED
-#define AUDIO_H_INCLUDED
+#ifndef TOOLS_H_INCLUDED
+#define TOOLS_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
+#include "opencv2/opencv.hpp"
+
 #include <essentia/algorithmfactory.h>
+#include <essentia/pool.h>
+
+//#include "Extraction.h"
 
 namespace Muce {
-    class Audio{
+    class Tools{
     public:
-        AudioFormatManager formatManager;
-        Audio()
+        Tools()
         {
             formatManager.registerBasicFormats();
         }
         
-        ~Audio() {};
+        ~Tools() {};
         
+        //Figure out where to put this stuff
+        typedef std::map<std::string, std::vector<essentia::Real> >::iterator RealMapIter;
+        typedef std::map<std::string, std::vector< std::vector<essentia::Real> > >::iterator VectorMapIter;
+        
+        AudioFormatManager formatManager;
+
         static std::vector<float> hannWindow(int size);
         static Array<File> getAudioFiles(const File& audioFolder);
         static bool vectorToAudioFile(const std::vector<essentia::Real> signal, const String fileName);
         
         AudioSampleBuffer audioFileToSampleBuffer(const File audioFile);
-        std::vector<essentia::Real> audioFileToVector(const File audioFile);        
+        std::vector<essentia::Real> audioFileToVector(const File audioFile);
+        
+        std::vector<essentia::Real> removeLabels(essentia::Pool& pool);
+        cv::Mat poolToMat(const essentia::Pool& pool);
     };
 }
 

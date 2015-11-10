@@ -17,7 +17,7 @@
 #include <essentia/essentiamath.h>
 #include <essentia/pool.h>
 
-#include "Audio.h"
+#include "Tools.h"
 
 namespace Muce {
     using namespace std;
@@ -31,7 +31,7 @@ namespace Muce {
     typedef std::map<std::string, std::vector< std::vector<Real> > >::iterator VectorMapIter;
     
 
-    class Extraction {
+    class Extraction : public ThreadWithProgressWindow {
     public:
         int sliceID;
         Random random;
@@ -63,6 +63,10 @@ namespace Muce {
         //Extract features for a vector of onsets
         
         //Build a whole dataset and output a json/yaml file
+        File threadAudioFolder;
+        bool threadWriteOnsets;
+        Pool threadFolderPool;
+        
         Pool extractFeaturesFromFolder(const File& audioFolder, bool writeOnsets);
         Pool extractFeaturesFromOnsets(vector<vector<Real> >& slices, Real BPM);
         Pool extractFeatures(const vector<Real>& audio, Real BPM);
@@ -75,7 +79,10 @@ namespace Muce {
         
         StringArray featuresInPool(const Pool& pool);
         
-        Audio audio;
+        Tools tools;
+        
+        bool threaded = true;
+        void run() override;
         
     private:
         //Spectral

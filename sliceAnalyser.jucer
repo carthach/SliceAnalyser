@@ -6,8 +6,8 @@
   <MAINGROUP id="putndE" name="sliceAnalyser">
     <GROUP id="{20F709EA-5E30-099A-39FE-9F04AD691B2D}" name="Source">
       <GROUP id="{C6C9282B-C96F-BBE9-701D-8DDB096469C8}" name="Muce">
-        <FILE id="zi3koh" name="Audio.cpp" compile="1" resource="0" file="Source/Audio.cpp"/>
-        <FILE id="qdROsD" name="Audio.h" compile="0" resource="0" file="Source/Audio.h"/>
+        <FILE id="zi3koh" name="Tools.cpp" compile="1" resource="0" file="Source/Tools.cpp"/>
+        <FILE id="qdROsD" name="Tools.h" compile="0" resource="0" file="Source/Tools.h"/>
         <FILE id="c7FGI2" name="Extraction.cpp" compile="1" resource="0" file="Source/Extraction.cpp"/>
         <FILE id="XEQrGd" name="Extraction.h" compile="0" resource="0" file="Source/Extraction.h"/>
         <FILE id="NGufbG" name="Information.cpp" compile="1" resource="0" file="Source/Information.cpp"/>
@@ -48,7 +48,8 @@
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
-    <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="" externalLibraries="essentia&#10;tag&#10;yaml&#10;opencv_core&#10;opencv_ml&#10;rubberband">
+    <XCODE_MAC targetFolder="Builds/MacOSX" extraLinkerFlags="/Users/carthach/Dev/bitbucket/rubberband/lib/librubberband.a"
+               externalLibraries="essentia&#10;tag&#10;yaml&#10;opencv_core&#10;opencv_ml">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="10.10 SDK" osxArchitecture="default"
                        isDebug="1" optimisation="1" targetName="sliceAnalyser" headerPath="/usr/local/include&#10;/Users/carthach/Dev/bitbucket/rubberband/rubberband"

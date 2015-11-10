@@ -46,20 +46,20 @@ private:
     DataComponent* dataComponent;
     Muce::Extraction extractor;
     Muce::Information  information;
-    Muce::Audio audio;
+    Muce::Tools tools;
 
 
     void showFile (const File& file) override
     {
         AudioPlaybackDemo::showFile(file);
         
-        currentTargetData.signal = audio.audioFileToVector(file);
+        currentTargetData.signal = tools.audioFileToVector(file);
         currentTargetData.onsetTimes = extractor.extractOnsetTimes(currentTargetData.signal);
         currentTargetData.onsets = extractor.extractOnsets(currentTargetData.onsetTimes, currentTargetData.signal);
         currentTargetData.onsetPeakValues = extractor.extractPeakValues(currentTargetData.onsets);
         
         essentia::Pool features = extractor.extractFeaturesFromOnsets(currentTargetData.onsets, 0.0f);
-        featureMatrix = information.poolToMat(features);
+        featureMatrix = tools.poolToMat(features);
 
 //        information.knnClassify(featureMatrix, 5);
         updateClusters();

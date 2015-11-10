@@ -14,6 +14,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 #include "opencv2/opencv.hpp"
+
 #include <essentia/algorithmfactory.h>
 #include <essentia/pool.h>
 
@@ -27,8 +28,6 @@ namespace Muce {
         
         //Conversion to OpenCV matrices
         void readYamlToMatrix(const String& yamlFileName, const StringArray& featureList);
-        cv::Mat poolToMat(const essentia::Pool& pool);
-        cv::Mat globalPoolToMat();
         cv::Mat pcaReduce(cv::Mat mat, int noOfDimensions);
         void normaliseFeatures(cv::Mat mat); //in-place
 
@@ -36,10 +35,7 @@ namespace Muce {
         
         cv::Mat kMeans(cv::Mat points, int k);
         cv::Mat knnClassify(cv::Mat instance, int k);
-        
-        cv::Mat knnTrain(essentia::Pool pool);
         cv::Mat knnTrain(cv::Mat points, cv::Mat classes);
-
     };
 }
 

@@ -82,6 +82,7 @@ public:
     
     Muce::Extraction extractor;
     Muce::Information information;
+    Muce::Tools tools;
     cv::Mat featureMatrix;
     
     DataComponent()
@@ -161,6 +162,8 @@ public:
         datasetFolderTextBox.setText(datasetFolder.getFullPathName());
         
         addAndMakeVisible(tableComponent);
+        
+
     }
     
     void resized () override
@@ -278,7 +281,6 @@ private:
         }
         else if (buttonThatWasClicked == &outputLoopButton)
         {
-
         }
         
         this->datasetFolder = datasetFolder;
@@ -310,7 +312,7 @@ private:
     
     void updateData(const essentia::Pool& pool)
     {
-        featureMatrix = information.poolToMat(pool);
+        featureMatrix = tools.poolToMat(pool);
         StringArray featureList = extractor.featuresInPool(pool);
         
         for(int i=0; i<featureList.size(); i++)

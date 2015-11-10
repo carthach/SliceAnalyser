@@ -87,14 +87,14 @@ private:
 
     bool distanceMatrixGenerated = false;
     
-    Muce::Audio audio;
+    Muce::Tools tools;
     Muce::Extraction extractor;
     
     void showFile (const File& file) override
     {
         AudioPlaybackDemo::showFile(file);
         
-        std::vector<float> signal = audio.audioFileToVector(file);
+        std::vector<float> signal = tools.audioFileToVector(file);
         std::vector<float> onsetTimes = extractor.extractOnsetTimes(signal);
         
         float duration = (float)signal.size() / 44100.0;
@@ -265,7 +265,7 @@ private:
         for(int i=0; i < noOfOutputSamples; i++)
             sampleVector.push_back(monoOutputPtr[0][i]);
 
-        audio.vectorToAudioFile(sampleVector,audioFilename);
+        tools.vectorToAudioFile(sampleVector,audioFilename);
                 
         showFile(File(audioFilename));
     }
@@ -304,9 +304,9 @@ private:
         //Place the new onsets at the sample times of the original
         for(int i=0; i<newOnsetPattern.size(); i++) {
             String audioFilename = audioFilenameRoot + "slice_" + String(newOnsetPattern[i]) + ".wav";
-            std::vector<float> onsetVector = audio.audioFileToVector(File(audioFilename));
+            std::vector<float> onsetVector = tools.audioFileToVector(File(audioFilename));
             
-            std::vector<float> hannWindow = audio.hannWindow(onsetVector.size());
+            std::vector<float> hannWindow = tools.hannWindow(onsetVector.size());
             
             int startSmoothSample = smoothStartSlider.getValue() * (float)onsetVector.size();
             int endSmoothSample = smoothEndSlider.getValue() * (float)onsetVector.size();
@@ -328,7 +328,7 @@ private:
         if(File(audioFilename).existsAsFile())
             File(audioFilename).deleteFile();
         
-        audio.vectorToAudioFile(sampleVector, audioFilename);
+        tools.vectorToAudioFile(sampleVector, audioFilename);
         
         showFile(File(audioFilename));
     }
