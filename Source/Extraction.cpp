@@ -141,7 +141,7 @@ namespace Muce {
     
     vector<Real> Extraction::extractOnsetTimes(const vector<Real>& audio)
     {
-        Algorithm* extractoronsetrate = AlgorithmFactory::create("OnsetRate");
+        ScopedPointer<Algorithm> extractoronsetrate = AlgorithmFactory::create("OnsetRate");
         
         Real onsetRate;
         vector<Real> onsets;
@@ -153,9 +153,7 @@ namespace Muce {
         extractoronsetrate->output("onsetRate").set(onsetRate);
         
         extractoronsetrate->compute();
-        
-        delete extractoronsetrate;
-        
+                
         return onsets;
     }
     
@@ -163,7 +161,7 @@ namespace Muce {
     
     vector<Real> Extraction::extractRhythmFeatures(const vector<Real>& audio)
     {
-        Algorithm* rhythmExtractor = AlgorithmFactory::create("RhythmExtractor2013", "method", "degara");
+        ScopedPointer<Algorithm> rhythmExtractor = AlgorithmFactory::create("RhythmExtractor2013", "method", "degara");
         
         Real bpm ,confidence;
         vector<Real> ticks, estimates, bpmIntervals;
@@ -179,8 +177,6 @@ namespace Muce {
         
         vector<Real> blah;
         blah.push_back(bpm);
-        
-        delete rhythmExtractor;
         
         return blah;
     }
@@ -259,7 +255,7 @@ namespace Muce {
         Pool pool;
         
         //We get the overall pool, merge and output
-        Algorithm* yamlInput  = AlgorithmFactory::create("YamlInput", "format", "json");
+        ScopedPointer<Algorithm> yamlInput  = AlgorithmFactory::create("YamlInput", "format", "json");
         yamlInput->configure("filename", jsonFilename.toStdString());
         yamlInput->output("pool").set(pool);
         yamlInput->compute();
@@ -454,7 +450,7 @@ namespace Muce {
         String jsonFilename = outputRoot + "dataset.json";
         
         //We get the overall pool, merge and output
-        Algorithm* yamlOutput  = standard::AlgorithmFactory::create("YamlOutput", "format", "json", "writeVersion", false);
+        ScopedPointer<Algorithm> yamlOutput  = standard::AlgorithmFactory::create("YamlOutput", "format", "json", "writeVersion", false);
         yamlOutput->input("pool").set(threadFolderPool);
         yamlOutput->configure("filename", jsonFilename.toStdString());
         yamlOutput->compute();
@@ -591,7 +587,7 @@ namespace Muce {
             if(aggrPool.contains<vector<Real> >("bands.mean")) {
                 vector<Real> aggrBands = aggrPool.value<vector<Real> >("bands.mean");
                 
-                Algorithm* mean = AlgorithmFactory::create("Mean");
+                ScopedPointer<Algorithm> mean = AlgorithmFactory::create("Mean");
                 
                 //=========== ERB STUFF =========
                 //Get erbLo
@@ -697,38 +693,20 @@ namespace Muce {
         //            }
         
         //Finally do the merge to the overall onsetPool
+        
         return aggrPool;
     }
     
     //Put your extractor code here
     Pool Extraction::extractFeaturesFromOnsets(vector<vector<Real> >& slices, Real BPM)
     {
-        
-        //The 3 levels of pools
         Pool onsetPool;
         
-
-        
-        //Loop through all the slices
-        vector<vector<Real> >::iterator sliceIterator;
-        
-        //Go through every onset and extract the features
-        for(sliceIterator = slices.begin(); sliceIterator != slices.end(); sliceIterator++)
+        for(auto slice : slices)
         {
-            Pool onsetFeatures = extractFeatures(*sliceIterator, 0);
+            Pool onsetFeatures = extractFeatures(slice, 0);
             onsetPool.merge(onsetFeatures, "append");
         }
-
-        //Remove unwanted stuff
-        onsetPool.remove("BPM");
-        onsetPool.remove("RMS");
-        onsetPool.remove("flatness.mean");
-        onsetPool.remove("flatness.var");
-        onsetPool.remove("pitch.mean");
-        onsetPool.remove("pitch.var");
-        onsetPool.remove("spectral_centroid.mean");
-        onsetPool.remove("spectral_centroid.var");
-        //    std::cout << onsetPool.descriptorNames();
         
         return onsetPool;
     }

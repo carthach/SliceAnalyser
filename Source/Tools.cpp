@@ -91,13 +91,12 @@ namespace Muce {
     
     std::vector<essentia::Real> Tools::removeLabels(essentia::Pool& pool)
     {
-        //Train Classifier
+        std::vector<essentia::Real> labelsVector;
         if (pool.contains<std::vector<essentia::Real> >("labels")) {
-            std::vector<essentia::Real> labelsVector = pool.value<std::vector<essentia::Real> >("labels");
+            labelsVector = pool.value<std::vector<essentia::Real> >("labels");
             pool.remove("labels");
-            
-            return labelsVector;
         }
+        return labelsVector;
     }
     
     
@@ -106,69 +105,76 @@ namespace Muce {
     {
         using namespace cv;
         
-        std::map<std::string, std::vector<essentia::Real> > realFeatures = pool.getRealPool();
-        std::map<std::string, std::vector< std::vector<essentia::Real> > > vectorFeatures = pool.getVectorRealPool();
+        RealMap realMap = pool.getRealPool();
+        VectorMap vectorMap = pool.getVectorRealPool();
         
         cv::Mat mat;
         
         //No features return empty mat
-        if(realFeatures.empty() && vectorFeatures.empty())
+        if(realMap.empty() && vectorMap.empty())
             return mat;
         
-        //Do real Features first
-        int noOfFeatures = realFeatures.size();
-        RealMapIter realIterator = realFeatures.begin();
-        int noOfInstances = realIterator->second.size();
-        
-        Mat realFeaturesMatrix;
-        if(noOfFeatures)
-            realFeaturesMatrix = Mat(noOfInstances, noOfFeatures, DataType<float>::type);
-        
-        int i=0;
-        for(; realIterator != realFeatures.end(); realIterator++) {
-            for(int j=0; j<realIterator->second.size(); j++)
-                realFeaturesMatrix.at<float>(j,i) = realIterator->second[j];
-            i++;
+        //Real Features
+        cv::Mat realMat;
+        if(!realMap.empty())
+        {
+            //Do real Features first
+            int noOfRealFeatures = realMap.size();
+            RealMapIter realIterator = realMap.begin();
+            int noOfRealInstances = realIterator->second.size();
+            
+            realMat = Mat(noOfRealInstances, noOfRealFeatures, DataType<float>::type);
+
+            int i=0;
+            for(; realIterator != realMap.end(); realIterator++) {
+                for(int j=0; j<realIterator->second.size(); j++)
+                    realMat.at<float>(j,i) = realIterator->second[j];
+                i++;
+            }
         }
-        
-        //If there are no vectorFeatures we are done
-        if(vectorFeatures.empty())
-            return realFeaturesMatrix;
         
         //Vector Features
-        
-        VectorMapIter vectorIterator;
-        int noOfVectorFeatures = 0;
-        
-        
-        //noOfVectorFeatures = the sum of the dimensions of each feature
-        for(vectorIterator = vectorFeatures.begin(); vectorIterator != vectorFeatures.end(); vectorIterator++) {
-            if(!vectorIterator->second.empty()) {
-                noOfVectorFeatures += vectorIterator->second[0].size(); //Get the dimensionality from the first instance
-                
-                if(realFeatures.size())
-                    jassert(noOfInstances == vectorIterator->second.size()); //The number of instances should agree with the Reals
-            }
-        }
-        
-        Mat vectorFeaturesMatrix(noOfInstances, noOfVectorFeatures, DataType<float>::type);
-        
-        //Instances
-        for(int i=0; i<noOfInstances;i++) {
-            //Vector
-            int rowCounter = 0;
-            for(vectorIterator = vectorFeatures.begin(); vectorIterator != vectorFeatures.end(); vectorIterator++) {
-                for(int j=0; j<vectorIterator->second[i].size(); j++) {
-                    vectorFeaturesMatrix.at<float>(i,rowCounter) = vectorIterator->second[i][j];
-                    rowCounter++;
+        cv::Mat vectorMat;
+        if(!vectorMap.empty())
+        {
+            VectorMapIter vectorMapIterator;
+            int noOfVectorFeatures = 0;
+            int noOfVectorInstances = 0;
+            
+            //noOfVectorFeatures = the sum of the dimensions of each feature
+            for(vectorMapIterator = vectorMap.begin(); vectorMapIterator != vectorMap.end(); vectorMapIterator++) {
+                if(!vectorMapIterator->second.empty()) {
+                    noOfVectorFeatures += vectorMapIterator->second[0].size(); //Get the dimensionality from the first instance (e.g. File 0)
                 }
+                noOfVectorInstances = vectorMapIterator->second.size();
                 
+                if(realMap.size())
+                    jassert(realMat.rows == noOfVectorInstances);
+            }
+            
+            vectorMat = cv::Mat(noOfVectorInstances, noOfVectorFeatures, DataType<float>::type);
+            
+            //Instances
+            for(int i=0; i<noOfVectorInstances;i++) {
+                //Vector
+                int rowCounter = 0;
+                for(vectorMapIterator = vectorMap.begin(); vectorMapIterator != vectorMap.end(); vectorMapIterator++) {
+                    for(int j=0; j<vectorMapIterator->second[i].size(); j++) {
+                        vectorMat.at<float>(i,rowCounter) = vectorMapIterator->second[i][j];
+                        rowCounter++;
+                    }
+                }
             }
         }
-        
-        //Concatenate
-        hconcat(realFeaturesMatrix, vectorFeaturesMatrix, mat);
-        
+
+        //Decide which mat to return
+        if(! realMat.empty() && !vectorMat.empty() && realMat.rows == vectorMat.rows)
+            hconcat(realMat, vectorMat, mat);
+        else if(!realMat.empty())
+            mat = realMat;
+        else if(!vectorMat.empty())
+            mat = vectorMat;
+
         return mat;
     }
 

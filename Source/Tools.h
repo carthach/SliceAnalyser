@@ -31,6 +31,8 @@ namespace Muce {
         ~Tools() {};
         
         //Figure out where to put this stuff
+        typedef std::map<std::string, std::vector<essentia::Real> > RealMap;
+        typedef std::map<std::string, std::vector< std::vector<essentia::Real> > > VectorMap;
         typedef std::map<std::string, std::vector<essentia::Real> >::iterator RealMapIter;
         typedef std::map<std::string, std::vector< std::vector<essentia::Real> > >::iterator VectorMapIter;
         
