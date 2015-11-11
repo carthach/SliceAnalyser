@@ -5,14 +5,14 @@
               jucerVersion="4.0.1">
   <MAINGROUP id="putndE" name="sliceAnalyser">
     <GROUP id="{20F709EA-5E30-099A-39FE-9F04AD691B2D}" name="Source">
-      <GROUP id="{C6C9282B-C96F-BBE9-701D-8DDB096469C8}" name="Muce">
-        <FILE id="zi3koh" name="Tools.cpp" compile="1" resource="0" file="Source/Tools.cpp"/>
-        <FILE id="qdROsD" name="Tools.h" compile="0" resource="0" file="Source/Tools.h"/>
-        <FILE id="c7FGI2" name="Extraction.cpp" compile="1" resource="0" file="Source/Extraction.cpp"/>
-        <FILE id="XEQrGd" name="Extraction.h" compile="0" resource="0" file="Source/Extraction.h"/>
-        <FILE id="NGufbG" name="Information.cpp" compile="1" resource="0" file="Source/Information.cpp"/>
-        <FILE id="RfZv51" name="Information.h" compile="0" resource="0" file="Source/Information.h"/>
-        <FILE id="wqTNyb" name="Muce.h" compile="0" resource="0" file="Source/Muce.h"/>
+      <GROUP id="{47E73AAE-D423-8730-6CF8-1ECCA7D7AB90}" name="Muce">
+        <FILE id="dyJ2wH" name="Extraction.cpp" compile="1" resource="0" file="Source/Muce/Extraction.cpp"/>
+        <FILE id="p7LJlM" name="Extraction.h" compile="0" resource="0" file="Source/Muce/Extraction.h"/>
+        <FILE id="RbxJ3C" name="Information.cpp" compile="1" resource="0" file="Source/Muce/Information.cpp"/>
+        <FILE id="tBukPW" name="Information.h" compile="0" resource="0" file="Source/Muce/Information.h"/>
+        <FILE id="Q6ARCz" name="Muce.h" compile="0" resource="0" file="Source/Muce/Muce.h"/>
+        <FILE id="EEmkhB" name="Tools.cpp" compile="1" resource="0" file="Source/Muce/Tools.cpp"/>
+        <FILE id="mdrziG" name="Tools.h" compile="0" resource="0" file="Source/Muce/Tools.h"/>
       </GROUP>
       <GROUP id="{53A4060D-F37E-A336-1EFD-01143F78B13C}" name="Visualisation">
         <FILE id="cFSyz3" name="Radar.cpp" compile="1" resource="0" file="Source/Radar.cpp"/>

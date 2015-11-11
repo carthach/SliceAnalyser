@@ -16,6 +16,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "DataTableComponent.h"
 #include "Muce.h"
+#include "Batch.h"
 
 //==============================================================================
 struct ListBoxContents  : public ListBoxModel
@@ -84,8 +85,9 @@ public:
     Muce::Information information;
     Muce::Tools tools;
     cv::Mat featureMatrix;
+    ThreadBatch threadBatch;
     
-    DataComponent()
+    DataComponent() : threadBatch(extractor)
     {
         formatManager.registerBasicFormats();
         
@@ -305,7 +307,8 @@ private:
         
         StringArray selectedFeatures = {"MFCC", "RMS"};
         extractor.setupUserAlgorithms(selectedFeatures);
-        essentia::Pool featurePool = extractor.extractFeaturesFromFolder(File(datasetFolder.getFullPathName()), false);
+//        essentia::Pool featurePool = extractor.extractFeaturesFromFolder(File(datasetFolder.getFullPathName()), false);
+        essentia::Pool featurePool = threadBatch.batchExtract(File(datasetFolder.getFullPathName()), false);
         
         updateData(featurePool);
     }
